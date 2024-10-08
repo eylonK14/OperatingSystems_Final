@@ -9,9 +9,19 @@ Graph::Graph(int V)
     {
         this->matrix[i] = new int[this->V];
         for (int j = 0; j < this->V; j++)
-        {
             this->matrix[i][j] = 0;
-        }
+    }
+}
+
+Graph::Graph(const Graph &other)
+{
+    this->V = other.V;
+    this->matrix = new int *[this->V];
+    for (int i = 0; i < this->V; i++)
+    {
+        this->matrix[i] = new int[this->V];
+        for (int j = 0; j < this->V; j++)
+            this->matrix[i][j] = other.matrix[i][j];
     }
 }
 
@@ -19,10 +29,18 @@ Graph::Graph(int V)
 Graph::~Graph()
 {
     for (int i = 0; i < this->V; i++)
-    {
         delete[] this->matrix[i];
-    }
     delete[] this->matrix;
+}
+
+int **Graph::getAdjMatrix() const
+{
+    return this->matrix;
+}
+
+int Graph::getV() const
+{
+    return this->V;
 }
 
 // Add an edge to the graph
@@ -46,12 +64,8 @@ void Graph::printGraph()
     {
         std::cout << i << " : ";
         for (int j = 0; j < this->V; j++)
-        {
             if (this->matrix[i][j] != 0)
-            {
                 std::cout << j << " ";
-            }
-        }
         std::cout << std::endl;
     }
 }

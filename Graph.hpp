@@ -16,6 +16,16 @@ public:
      */
     Graph(int V);
 
+    Graph();
+
+    Graph(const Graph &other);
+
+    ~Graph();
+
+    int** getAdjMatrix() const;
+
+    int getV() const;
+
     /**
      * @brief Adds an edge to the graph.
      *

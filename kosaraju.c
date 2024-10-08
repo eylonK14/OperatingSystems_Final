@@ -43,7 +43,6 @@ Graph *kruskalMST(Graph *graph)
     
 }
 
-
 char *mst_factory(Graph *graph, char *algorithm)
 {
     char *result = (char *)malloc(sizeof(char) * 256);

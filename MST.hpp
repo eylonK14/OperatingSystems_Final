@@ -1,17 +1,41 @@
 #include <iostream>
-#include "Graph.hpp"
+#include "MSTAlgorithmFactory.hpp"
 
-class MST : public Graph 
+class MST : public Graph
 {
 public:
-    MST(Graph &g);
+    MST(Graph &g, std::string algorithm) : Graph(MSTAlgorithmFactory::MSTFactory(g, algorithm)) {};
     ~MST();
 
-    int getTotalWeight();
-    int getLongestDistance();
-    int getAverageDistance();
-    int getShortestDistance();
+    int getTotalWeight() const;
+    int getLongestDistance() const;
+    double getAverageDistance() const;
+    int getShortestDistance() const;
+
+    std::pair<int, int> bfs(int start) const;
 };
 
+/*
+TODO: [x] mst_create
+TODO: [x] mst_weight
+TODO: [x] mst_longdist
+TODO: [ ] mst_avgdist
+TODO: [ ] mst_shortdist
+*/
 
- 
+/*
+ 0    3
+ v    ^
+ 1 -> 2
+
+ 3 / 3 = 1
+
+ 0 -> 1 = 1
+ 0 -> 2 = 2
+ 0 -> 3 = 3
+ 1 -> 2 = 1
+ 1 -> 3 = 2
+ 2 -> 3 = 1
+ ==========
+         10 / 6 = 1.6666666666666667
+*/

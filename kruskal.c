@@ -32,7 +32,7 @@ int findParent(int parent[], int component)
 }
 
 // Function to unite two sets
-void unionSet(int u, int v, int parent[], int rank[], int n)
+void unionSet(int u, int v, int parent[], int rank[], int n) 
 {
     // Finding the parents
     u = findParent(parent, u);

@@ -1,32 +1,73 @@
 #include "MST.hpp"
 
-MST::MST(Graph &graph)
+int MST::getTotalWeight() const
 {
-    this->V = graph->V;
-    this->matrix = new int *[this->V];
-    for (int i = 0; i < this->V; i++)
+    int MSTweight = 0;
+    for (int i = 0; i < getV(); i++)
+        for (int j = i; j < getV(); j++)
+            if (getAdjMatrix()[i][j])
+                MSTweight += getAdjMatrix()[i][j];
+
+    return MSTweight;
+}
+
+int MST::getLongestDistance() const
+{
+    std::pair<int, int> firstBFS = bfs(0);
+    std::pair<int, int> secondBFS = bfs(firstBFS.first);
+    return secondBFS.second;
+}
+
+double MST::getAverageDistance() const
+{
+    int totalWeight = 0;
+    int edgeCount = 0;
+
+    for (int i = 0; i < getV(); i++)
     {
-        this->matrix[i] = new int[this->V];
-        for (int j = 0; j < this->V; j++)
+        for (int j = i + 1; j < getV(); j++)
         {
-            this->matrix[i][j] = graph->matrix[i][j];
+            if (getAdjMatrix()[i][j] != 0)
+            {
+                totalWeight += getAdjMatrix()[i][j];
+                edgeCount++;
+            }
         }
     }
+
+    if (edgeCount == 0)
+        return 0.0; // Avoid division by zero
+
+    return static_cast<double>(totalWeight) / edgeCount;
 }
 
-MST::~MST()
+std::pair<int, int> MST::bfs(int start) const
 {
-    for (int i = 0; i < this->V; i++)
+    std::vector<int> dist(getV(), INT_MAX);
+    std::queue<int> q;
+    q.push(start);
+    dist[start] = 0;
+
+    int farthestNode = start;
+    while (!q.empty())
     {
-        delete[] this->matrix[i];
+        int node = q.front();
+        q.pop();
+
+        for (int i = 0; i < getV(); i++)
+        {
+            if (getAdjMatrix()[node][i] != 0 && dist[i] == INT_MAX)
+            {
+                dist[i] = dist[node] + getAdjMatrix()[node][i];
+                q.push(i);
+
+                if (dist[i] > dist[farthestNode])
+                {
+                    farthestNode = i;
+                }
+            }
+        }
     }
-    delete[] this->matrix;
-}
 
-void MST::addEdge(int u, int v, int weight)
-{
-    this->matrix[u][v] = weight;
-    this->matrix[v][u] = weight;
+    return {farthestNode, dist[farthestNode]};
 }
-
-void

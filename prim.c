@@ -83,8 +83,16 @@ void primMST(int graph[V][V])
                 parent[v] = u, key[v] = graph[u][v];
     }
 
+    // Create the MST graph
+    Graph mstGraph(V);
+    for (int i = 1; i < V; i++) {
+        mstGraph.addEdge(parent[i], i, adj[i][parent[i]]);
+    }
+
+    return mstGraph;
+
     // print the constructed MST
-    printMST(parent, graph);
+    // printMST(parent, graph);
 }
 
 // Driver's code

@@ -1,14 +1,16 @@
 #include <iostream>
-#include "MST.hpp"
+#include "Graph.hpp"
+#include "UnionFind.hpp"
 
-class MSTAlgorithmFactory 
+class MSTAlgorithmFactory
 {
 public:
-    MST MSTFactory(Graph &graph, std::string algorithm);
+    static Graph MSTFactory(Graph &graph, std::string algorithm);
 
 private:
-    MST prim(Graph &graph);
-    MST kruskal(Graph &graph);
-    MST boruvka(Graph &graph);
+    static Graph prim(Graph &graph);
+    static Graph kruskal(Graph &graph);
+    static Graph boruvka(Graph &graph);
 
+    static int minKey(int key[], bool mstSet[], int V);
 };
