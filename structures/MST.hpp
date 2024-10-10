@@ -15,13 +15,6 @@ public:
     std::pair<int, int> bfs(int start) const;
 };
 
-/*
-TODO: [x] mst_create
-TODO: [x] mst_weight
-TODO: [x] mst_longdist
-TODO: [ ] mst_avgdist
-TODO: [ ] mst_shortdist
-*/
 
 /*
  0    3

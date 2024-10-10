@@ -1,14 +1,6 @@
-#include "prof.h"
-
-#ifdef TWO_DIM_ARR
-#include "twoDimArr.h"
-#endif // TWO_DIM_ARR
-
-#ifdef DEQUE
-#include "deque.h"
-#endif // DEQUE
-
 #include "pollserver.h"
+#include "structures/Graph.hpp"
+#include "structures/MST.hpp"
 
 int words(char sentence[])
 {
@@ -30,39 +22,6 @@ void parseCommand(char *input, char **command, int word_count)
         token = strtok(NULL, " ");
     }
     command[word_count] = NULL;
-}
-
-Graph *kruskalMST(Graph *graph)
-{
-    int V = graph->V;
-    int E = 0;
-    for (int i = 0; i < V; i++)
-        for (int j = 0; j < V; j++)
-            if (graph->G[i][j])
-                E++;
-    
-}
-
-char *mst_factory(Graph *graph, char *algorithm)
-{
-    char *result = (char *)malloc(sizeof(char) * 256);
-    if (!strcmp(algorithm, "kruskal"))
-    {
-        Graph *mst = kruskalMST(graph);
-        for (int i = 0; i < mst->V; i++)
-            for (int j = 0; j < mst->V; j++)
-                if (mst->G[i][j])
-                    sprintf(result, "%s%d,%d\n", result, i + 1, j + 1);
-    }
-    else if (!strcmp(algorithm, "prim"))
-    {
-        Graph *mst = primMST(graph);
-        for (int i = 0; i < mst->V; i++)
-            for (int j = 0; j < mst->V; j++)
-                if (mst->G[i][j])
-                    sprintf(result, "%s%d,%d\n", result, i + 1, j + 1);
-    }
-    return result;
 }
 
 char *parse(char *input, Graph **graph, int *edge_counter, int *n, int *m)

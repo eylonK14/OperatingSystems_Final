@@ -69,3 +69,31 @@ void Graph::printGraph()
         std::cout << std::endl;
     }
 }
+
+
+// Function to get the transpose of the graph
+Graph *transposeGraph(Graph *graph)
+{
+	Graph *transposed = createGraph(graph->V);
+	for (int v = 0; v < graph->V; v++)
+	{
+#ifdef ADJ_MATRIX
+		for (int i = 0; i < graph->V; i++)
+		{
+			if (graph->G[v][i])
+				addEdge(transposed, i, v);
+		}
+#endif // ADJ_MATRIX
+
+#ifdef ADJ_LIST
+		AdjListNode *adjNode = graph->array[v].head;
+		while (adjNode != NULL)
+		{
+			int neighbor = adjNode->dest;
+			addEdge(transposed, neighbor, v);
+			adjNode = adjNode->next;
+		}
+#endif // ADJ_LIST
+	}
+	return transposed;
+}
