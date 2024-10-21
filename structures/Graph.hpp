@@ -2,7 +2,10 @@
 
 /**
  * @class Graph
- * @brief A class to represent a graph using an adjacency matrix.
+ * @brief A class representing a graph using an adjacency matrix.
+ *
+ * This class provides functionalities to create a graph, add and remove edges,
+ * and print the graph.
  *
  * This class provides methods to add and remove edges, and to print the graph.
  */
@@ -16,14 +19,35 @@ public:
      */
     Graph(int V);
 
+    /**
+     * @brief Default constructor for the Graph class.
+     */
     Graph();
 
+    /**
+     * @brief Copy constructor for the Graph class.
+     *
+     * @param other The graph to copy.
+     */
     Graph(const Graph &other);
 
+    /**
+     * @brief Destructor for the Graph class.
+     */
     ~Graph();
 
+    /**
+     * @brief Gets the adjacency matrix of the graph.
+     *
+     * @return A pointer to the adjacency matrix.
+     */
     int** getAdjMatrix() const;
 
+    /**
+     * @brief Gets the number of vertices in the graph.
+     *
+     * @return The number of vertices.
+     */
     int getV() const;
 
     /**
