@@ -3,6 +3,9 @@
 // Constructor
 Graph::Graph(int V)
 {
+    if (V <= 0)
+        throw std::invalid_argument( "received negative value" );
+    
     this->V = V;
     this->matrix = new int *[this->V];
     for (int i = 0; i < this->V; i++)

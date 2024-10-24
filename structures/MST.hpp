@@ -17,6 +17,13 @@ class MST : public Graph
 {
 public:
     /**
+     * @brief Empty constructor for the MST class.
+     *
+     * This constructor initializes an empty MST object.
+     */
+    MST();
+
+    /**
      * @brief Constructs a Minimum Spanning Tree (MST) using the specified algorithm.
      *
      * @param g The graph from which the MST is to be constructed.
@@ -48,7 +55,7 @@ public:
      *
      * @return The average distance of the edges in the MST.
      */
-    double getAverageDistance() const;
+    int getAverageDistance() const;
 
     /**
      * @brief Gets the shortest distance in the MST.

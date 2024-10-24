@@ -26,7 +26,9 @@ Graph MSTAlgorithmFactory::MSTFactory(Graph &graph, std::string algorithm)
 Graph MSTAlgorithmFactory::prim(Graph &graph)
 {
     int V = graph.getV();
-    int adjMatrix[V][V] = {{0}};
+    int** adjMatrix = new int*[V];
+    for (int i = 0; i < V; i++)
+        adjMatrix[i] = new int[V];
 
     for (int i = 0; i < V; i++)
         for (int j = 0; j < V; j++)
@@ -89,7 +91,9 @@ Graph MSTAlgorithmFactory::kruskal(Graph &graph)
     // Get all edges from the adjacency matrix
     std::vector<std::vector<int>> edgeList;
     int V = graph.getV();
-    int adjMatrix[V][V] = {{0}};
+    int** adjMatrix = new int*[V];
+    for (int i = 0; i < V; i++)
+        adjMatrix[i] = new int[V];
 
     for (int i = 0; i < V; i++)
         for (int j = 0; j < V; j++)
@@ -128,7 +132,9 @@ Graph MSTAlgorithmFactory::kruskal(Graph &graph)
 Graph MSTAlgorithmFactory::boruvka(Graph &graph)
 {
     int V = graph.getV();
-    int adj[V][V] = {{0}};
+    int** adj = new int*[V];
+    for (int i = 0; i < V; i++)
+        adj[i] = new int[V];
 
     for (int i = 0; i < V; i++)
         for (int j = 0; j < V; j++)

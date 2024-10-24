@@ -86,6 +86,16 @@
     "typeindex": "cpp",
     "typeinfo": "cpp",
     "valarray": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "hash_map": "cpp",
+    "expected": "cpp",
+    "hash_set": "cpp",
+    "format": "cpp",
+    "generator": "cpp",
+    "print": "cpp",
+    "spanstream": "cpp",
+    "stacktrace": "cpp",
+    "stdfloat": "cpp",
+    "text_encoding": "cpp"
   }
 }

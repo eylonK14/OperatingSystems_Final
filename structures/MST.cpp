@@ -18,7 +18,7 @@ int MST::getLongestDistance() const
     return secondBFS.second;
 }
 
-double MST::getAverageDistance() const
+int MST::getAverageDistance() const
 {
     int totalWeight = 0;
     int edgeCount = 0;
@@ -38,7 +38,7 @@ double MST::getAverageDistance() const
     if (edgeCount == 0)
         return 0.0; // Avoid division by zero
 
-    return static_cast<double>(totalWeight) / edgeCount;
+    return static_cast<int>(totalWeight) / edgeCount;
 }
 
 int MST::getShortestDistance() const
