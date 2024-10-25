@@ -237,13 +237,11 @@ std::string LFprintMenu()
 
 void LFServer::LFaddedge(std::string uStr, std::string vStr, std::string wStr)
 {
-    std::cout << "Adding edge " << uStr << " " << vStr << " " << wStr << "\n";
     try
     {
         int u = std::stoi(uStr) - 1;
         int v = std::stoi(vStr) - 1;
         int w = std::stoi(wStr);
-        std::cout << "Adding edge " << u << " " << v << " " << w << "\n";
         this->graph->addEdge(u, v, w);
     }
     catch (const std::invalid_argument &)
@@ -280,10 +278,6 @@ std::string LFServer::LFparse(std::string input)
 
     if (tokens.size() > 1)
     {
-        for (auto token : tokens)
-        {
-            std::cout << "token: " << token << std::endl;
-        }
         if (command == "newgraph" || this->newGraphFlag)
         {
             if (this->newGraphFlag)

@@ -203,7 +203,6 @@ Graph MSTAlgorithmFactory::boruvka(Graph &graph)
         }
     }
 
-    std::cout << "Weight of MST is " << MSTweight << std::endl;
     return mst;
 }
 

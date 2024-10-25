@@ -20,8 +20,6 @@ Graph::Graph(const Graph &other)
 {
     this->V = other.V;
     this->matrix = new int *[this->V];
-    std::cout << "V: " << other.V << std::endl;
-    std::cout << this->V << std::endl;
     for (int i = 0; i < this->V; i++)
     {
         this->matrix[i] = new int[this->V];

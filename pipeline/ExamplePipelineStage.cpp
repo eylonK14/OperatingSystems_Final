@@ -23,13 +23,11 @@ std::string PLprintMenu()
 
 void ExamplePipelineStage::PLaddedge(std::string uStr, std::string vStr, std::string wStr)
 {
-    std::cout << "Adding edge " << uStr << " " << vStr << " " << wStr << "\n";
     try
     {
         int u = std::stoi(uStr) - 1;
         int v = std::stoi(vStr) - 1;
         int w = std::stoi(wStr);
-        std::cout << "Adding edge " << u << " " << v << " " << w << "\n";
         this->graph->addEdge(u, v, w);
     }
     catch (const std::invalid_argument &)
@@ -42,7 +40,6 @@ std::string ExamplePipelineStage::PLparse(std::string input)
 {
     std::string result;
 
-    std::cout << "Processing: " << input << std::endl;
 
     // Remove trailing newline character if present
     if (!input.empty() && input.back() == '\n')
@@ -68,10 +65,6 @@ std::string ExamplePipelineStage::PLparse(std::string input)
 
     if (tokens.size() > 1)
     {
-        for (auto token : tokens)
-        {
-            std::cout << "token: " << token << std::endl;
-        }
         if (command == "newgraph" || this->newGraphFlag)
         {
             if (this->newGraphFlag)
@@ -89,6 +82,7 @@ std::string ExamplePipelineStage::PLparse(std::string input)
                     int m = std::stoi(tokens[2]);
                     this->counter = m;
                     this->graph = new Graph(n);
+
 
                     newGraphFlag = true;
                 }
@@ -155,26 +149,27 @@ std::string ExamplePipelineStage::PLparse(std::string input)
     }
     else if (command == "print")
     {
-        result = "Graph:\n";
-        result += this->graph->printGraph();
-        result += "MST:\n";
-        result += this->mst->printGraph();
+        if (this->graph != nullptr)
+        {
+            result = "Graph:\n";
+            result += this->graph->printGraph();
+        }
+        if (this->mst != nullptr)
+        {
+            result += "MST:\n";
+            result += this->mst->printGraph();
+        }
     }
     else if (command == "exit")
-    {
         exit(EXIT_SUCCESS);
-    }
     else if (command == "help")
-    {
         result = PLprintMenu();
-    }
     else
     {
-        // Unrecognized command
         std::cerr << "Unrecognized command.\n";
+        result = "Unrecognized command.\n";
     }
-
-    std::cout << result;
+        
 
     return result;
 }
@@ -184,15 +179,11 @@ void ExamplePipelineStage::process(const std::string &input, std::function<void(
     // Wrap outputCallback in a shared_ptr
     auto outputCallbackPtr = std::make_shared<std::function<void(const std::string&)>>(outputCallback);
 
-    std::cout << "Processing example pipeline stage: " << input << std::endl;
-
     activeObject.enqueue([input, this, outputCallbackPtr](){
         std::string output = PLparse(input);
         try
         {
-            std::cout << "before callback" << std::endl;
             (*outputCallbackPtr)(output);
-            std::cout << "after callback" << std::endl;
         }
         catch (const std::exception &e)
         {

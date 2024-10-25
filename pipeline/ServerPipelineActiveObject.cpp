@@ -119,7 +119,6 @@ void PLServer::handleClientData(int client_fd, std::vector<pollfd> &poll_fds) {
             std::weak_ptr<ClientConnection> client_weak = client;
             pipeline.process(message, [this, client_weak](const std::string& output) {
                 // Output callback executed in another thread
-                std::cout << "Output: here!!!!" << output << std::endl;
                 if (auto client = client_weak.lock()) {
                     int fd = client->fd;
                     std::string response = output + "\n";
@@ -155,85 +154,6 @@ void PLServer::run()
             perror("poll failed");
             break;
         }
-/*
-        for (size_t i = 0; i < poll_fds.size(); ++i)
-        {
-            if (poll_fds[i].revents & POLLIN)
-            {
-                if (poll_fds[i].fd == PLServer_fd)
-                {
-                    // Accept new connection
-                    int new_socket = accept(PLServer_fd, NULL, NULL);
-                    if (new_socket < 0)
-                    {
-                        if (errno != EWOULDBLOCK && errno != EAGAIN)
-                        {
-                            perror("accept failed");
-                        }
-                        continue;
-                    }
-
-                    // Set new_socket to non-blocking
-                    int flags = fcntl(new_socket, F_GETFL, 0);
-                    fcntl(new_socket, F_SETFL, flags | O_NONBLOCK);
-
-                    // Add new_socket to poll_fds
-                    struct pollfd client_poll_fd;
-                    client_poll_fd.fd = new_socket;
-                    client_poll_fd.events = POLLIN;
-                    poll_fds.push_back(client_poll_fd);
-                    client_fds.push_back(new_socket);
-                    client_buffers[new_socket] = "";
-
-                    std::cout << "New client connected: FD " << new_socket << std::endl;
-                }
-                else
-                {
-                    // Handle data from client
-                    int client_fd = poll_fds[i].fd;
-                    char buffer[1024];
-                    ssize_t bytes_read = read(client_fd, buffer, sizeof(buffer));
-
-                    if (bytes_read <= 0)
-                    {
-                        if (bytes_read == 0 || (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN))
-                        {
-                            // Client disconnected or error
-                            std::cout << "Client disconnected: FD " << client_fd << std::endl;
-                            close(client_fd);
-                            poll_fds.erase(poll_fds.begin() + i);
-                            client_fds.erase(std::remove(client_fds.begin(), client_fds.end(), client_fd), client_fds.end());
-                            client_buffers.erase(client_fd);
-                            --i;
-                        }
-                        continue;
-                    }
-                    else
-                    {
-                        // Append to client's buffer
-                        client_buffers[client_fd].append(buffer, bytes_read);
-
-                        // Check for complete message (e.g., newline-terminated)
-                        size_t pos;
-                        while ((pos = client_buffers[client_fd].find('\n')) != std::string::npos)
-                        {
-                            std::string message = client_buffers[client_fd].substr(0, pos);
-                            client_buffers[client_fd].erase(0, pos + 1);
-
-                            // Process message through the pipeline
-                            pipeline.process(message, [this, client_fd](const std::string &output){
-                                // Send the output back to the client
-                                std::string response = output + "\n";
-                                std::cout << "Sending response: " << response << std::endl;
-                                write(client_fd, response.c_str(), response.length()); 
-                            });
-                        }
-                    }
-                }
-            }
-        }
-*/
-
         for (size_t i = 0; i < poll_fds.size(); ++i) 
         {
             if (poll_fds[i].revents & POLLIN)
