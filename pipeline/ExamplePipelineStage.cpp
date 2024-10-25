@@ -3,47 +3,46 @@
 
 ExamplePipelineStage::ExamplePipelineStage() : activeObject() {}
 
-std::string printMenu()
+std::string PLprintMenu()
 {
     std::stringstream ss;
     ss << "Menu:\n";
-    ss << " 1. Create New Graph           - `newgraph v, e`\n";
-    ss << " 2. Add Edge                   - `addedge i, j, w`\n";
-    ss << " 3. Remove Edge                - `removeedge i, j`\n";
+    ss << " 1. Create New Graph           - `newgraph v e`\n";
+    ss << " 2. Add Edge                   - `addedge i j w`\n";
+    ss << " 3. Remove Edge                - `removeedge i j`\n";
     ss << " 4. Compute MST                - `boruvka`/`kruskal`/`prim`\n";
     ss << " 5. Get Longest Path           - `longestpath`\n";
     ss << " 6. Get Shortest Path          - `shortestpath\n";
     ss << " 7. Get Average Path           - `avgpath`\n";
     ss << " 8. Get Total Path             - `totalweight`\n";
-    ss << " 9. Print MST                  - `print`\n";
+    ss << " 9. Print                      - `print`\n";
     ss << "10. Exit                       - `exit`\n";
     ss << "11. Help (show this help text) - `help`\n";
     return ss.str();
 }
 
-void ExamplePipelineStage::addEdge(std::vector<std::string> &tokens)
+void ExamplePipelineStage::PLaddedge(std::string uStr, std::string vStr, std::string wStr)
 {
-    std::istringstream uv_stream(tokens[1]);
-    std::string u_str, v_str, w_str;
-    if (std::getline(uv_stream, u_str, ',') && std::getline(uv_stream, v_str, ',') && std::getline(uv_stream, w_str))
+    std::cout << "Adding edge " << uStr << " " << vStr << " " << wStr << "\n";
+    try
     {
-        try
-        {
-            int u = std::stoi(u_str) - 1;
-            int v = std::stoi(v_str) - 1;
-            int w = std::stoi(w_str);
-            this->graph->addEdge(u, v, w);
-        }
-        catch (const std::invalid_argument &)
-        {
-            std::cerr << "Invalid arguments for addedge.\n";
-        }
+        int u = std::stoi(uStr) - 1;
+        int v = std::stoi(vStr) - 1;
+        int w = std::stoi(wStr);
+        std::cout << "Adding edge " << u << " " << v << " " << w << "\n";
+        this->graph->addEdge(u, v, w);
+    }
+    catch (const std::invalid_argument &)
+    {
+        std::cerr << "Invalid arguments for LFaddedge!\n";
     }
 }
 
-std::string ExamplePipelineStage::parse(std::string input)
+std::string ExamplePipelineStage::PLparse(std::string input)
 {
     std::string result;
+
+    std::cout << "Processing: " << input << std::endl;
 
     // Remove trailing newline character if present
     if (!input.empty() && input.back() == '\n')
@@ -62,107 +61,104 @@ std::string ExamplePipelineStage::parse(std::string input)
     if (tokens.empty())
     {
         // Empty input, do nothing
-        return "Invalid Command";
+        return "Invalid Command!\n";
     }
 
-    const std::string& command = tokens[0];
+    const std::string &command = tokens[0];
 
-    if(tokens.size() > 1)
+    if (tokens.size() > 1)
     {
+        for (auto token : tokens)
+        {
+            std::cout << "token: " << token << std::endl;
+        }
         if (command == "newgraph" || this->newGraphFlag)
         {
             if (this->newGraphFlag)
             {
-                // insert edges
-                addEdge(tokens);
+                PLaddedge(tokens[0], tokens[1], tokens[2]);
                 this->counter--;
                 if (this->counter == 0)
-                {
                     this->newGraphFlag = false;
-                }
             }
             else
             {
-                std::istringstream nm_stream(tokens[1]);
-                std::string n_str, m_str;
-                if (std::getline(nm_stream, n_str, ',') && std::getline(nm_stream, m_str))
+                try
                 {
-                    try
-                    {
-                        int n = std::stoi(n_str);
-                        int m = std::stoi(m_str);
-                        this->counter = m;
-                        Graph my_graph(n);
-                        this->graph = new Graph(my_graph);
+                    int n = std::stoi(tokens[1]);
+                    int m = std::stoi(tokens[2]);
+                    this->counter = m;
+                    this->graph = new Graph(n);
 
-                        newGraphFlag = true;
-                    }
-                    catch (const std::invalid_argument&)
-                    {
-                        std::cerr << "Invalid arguments for newgraph.\n";
-                    }
+                    newGraphFlag = true;
+                }
+                catch (const std::invalid_argument &)
+                {
+                    std::cerr << "Invalid arguments for newgraph!\n";
                 }
             }
         }
         else if (command == "addedge")
         {
-            this->addEdge(tokens);
+            PLaddedge(tokens[1], tokens[2], tokens[3]);
 
-            result = "Edge added successfully";
+            result = "Edge added successfully.\n";
         }
         else if (command == "removeedge")
         {
-            std::istringstream uv_stream(tokens[1]);
-            std::string u_str, v_str;
-            if (std::getline(uv_stream, u_str, ',') && std::getline(uv_stream, v_str))
+            try
             {
-                try
-                {
-                    int u = std::stoi(u_str) - 1;
-                    int v = std::stoi(v_str) - 1;
-                    this->graph->removeEdge(u, v);
-                }
-                catch (const std::invalid_argument&)
-                {
-                    std::cerr << "Invalid arguments for removeedge.\n";
-                }
+                int u = std::stoi(tokens[1]) - 1;
+                int v = std::stoi(tokens[2]) - 1;
+                this->graph->removeEdge(u, v);
+            }
+            catch (const std::invalid_argument &)
+            {
+                std::cerr << "Invalid arguments for removeedge!\n";
             }
 
-        result = "Edge removed successfully";
+            result = "Edge removed successfully.\n";
         }
     }
     else if (command == "kruskal" || command == "prim" || command == "boruvka")
     {
         this->mst = new MST(*this->graph, command);
-        result = "Created MST using " + command + " algorithm";
+        result = "Created MST using " + command + " algorithm.\n";
     }
     else if (command == "longestpath")
     {
-        if (this-> mst == nullptr)
-            result = "Must create MST first!";
+        if (this->mst == nullptr)
+            result = "Must create MST first!\n";
         else
-            result = "Longest path of the MST: " + mst->getLongestDistance();
+            result = "Longest path of the MST: " + std::to_string(mst->getLongestDistance()) + ".\n";
     }
     else if (command == "shortestpath")
     {
-        if (this-> mst == nullptr)
-            result = "Must create MST first!";
+        if (this->mst == nullptr)
+            result = "Must create MST first!\n";
         else
-            result = "Shortest path of the MST: " + mst->getShortestDistance();
+            result = "Shortest path of the MST: " + std::to_string(mst->getShortestDistance()) + ".\n";
     }
     else if (command == "avgpath")
     {
-        if (this-> mst == nullptr)
-            result = "Must create MST first!";
+        if (this->mst == nullptr)
+            result = "Must create MST first!\n";
         else
-            result = "Average path of the MST: " + mst->getAverageDistance();
+            result = "Average path of the MST: " + std::to_string(mst->getAverageDistance()) + ".\n";
     }
     else if (command == "totalweight")
     {
-        if (this-> mst == nullptr)
-            result = "Must create MST first!";
+        if (this->mst == nullptr)
+            result = "Must create MST first!\n";
         else
-            result = "Total Weight of the MST: " + mst->getTotalWeight();
+            result = "Total Weight of the MST: " + std::to_string(mst->getTotalWeight()) + ".\n";
+    }
+    else if (command == "print")
+    {
+        result = "Graph:\n";
+        result += this->graph->printGraph();
+        result += "MST:\n";
+        result += this->mst->printGraph();
     }
     else if (command == "exit")
     {
@@ -170,7 +166,7 @@ std::string ExamplePipelineStage::parse(std::string input)
     }
     else if (command == "help")
     {
-        result = printMenu();
+        result = PLprintMenu();
     }
     else
     {
@@ -178,13 +174,29 @@ std::string ExamplePipelineStage::parse(std::string input)
         std::cerr << "Unrecognized command.\n";
     }
 
+    std::cout << result;
+
     return result;
 }
 
-void ExamplePipelineStage::process(const std::string& input, std::function<void(const std::string&)> outputCallback) {
-    activeObject.enqueue([input, outputCallback, this]() 
-    {
-        std::string output = parse(input);
-        outputCallback(output);
+void ExamplePipelineStage::process(const std::string &input, std::function<void(const std::string &)> outputCallback)
+{
+    // Wrap outputCallback in a shared_ptr
+    auto outputCallbackPtr = std::make_shared<std::function<void(const std::string&)>>(outputCallback);
+
+    std::cout << "Processing example pipeline stage: " << input << std::endl;
+
+    activeObject.enqueue([input, this, outputCallbackPtr](){
+        std::string output = PLparse(input);
+        try
+        {
+            std::cout << "before callback" << std::endl;
+            (*outputCallbackPtr)(output);
+            std::cout << "after callback" << std::endl;
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Exception in ExamplePipelineStage: " << e.what() << std::endl;
+        }
     });
 }

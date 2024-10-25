@@ -1,3 +1,5 @@
+#pragma once
+
 #include <iostream>
 
 /**
@@ -70,7 +72,7 @@ public:
     /**
      * @brief Prints the adjacency matrix of the graph.
      */
-    void printGraph();
+    std::string printGraph();
 
 private:
     int V;

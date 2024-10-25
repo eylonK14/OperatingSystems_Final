@@ -17,16 +17,13 @@ Graph MSTAlgorithmFactory::MSTFactory(Graph &graph, std::string algorithm)
         Graph mst = boruvka(graph);
         return mst;
     }
-    else
-    {
-        std::cout << "Error: Invalid algorithm" << std::endl;
-    }
+    return graph;
 }
 
 Graph MSTAlgorithmFactory::prim(Graph &graph)
 {
     int V = graph.getV();
-    int** adjMatrix = new int*[V];
+    int **adjMatrix = new int *[V];
     for (int i = 0; i < V; i++)
         adjMatrix[i] = new int[V];
 
@@ -91,7 +88,7 @@ Graph MSTAlgorithmFactory::kruskal(Graph &graph)
     // Get all edges from the adjacency matrix
     std::vector<std::vector<int>> edgeList;
     int V = graph.getV();
-    int** adjMatrix = new int*[V];
+    int **adjMatrix = new int *[V];
     for (int i = 0; i < V; i++)
         adjMatrix[i] = new int[V];
 
@@ -100,7 +97,7 @@ Graph MSTAlgorithmFactory::kruskal(Graph &graph)
             adjMatrix[i][j] = graph.getAdjMatrix()[i][j];
 
     for (int i = 0; i < V; i++)
-        for (int j = i + 1; j < V; j++)// To avoid duplicates, use only upper triangle of matrix
+        for (int j = i + 1; j < V; j++) // To avoid duplicates, use only upper triangle of matrix
             if (adjMatrix[i][j] != 0)
                 edgeList.push_back({adjMatrix[i][j], i, j});
 
@@ -132,7 +129,7 @@ Graph MSTAlgorithmFactory::kruskal(Graph &graph)
 Graph MSTAlgorithmFactory::boruvka(Graph &graph)
 {
     int V = graph.getV();
-    int** adj = new int*[V];
+    int **adj = new int *[V];
     for (int i = 0; i < V; i++)
         adj[i] = new int[V];
 

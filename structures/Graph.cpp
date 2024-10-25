@@ -4,8 +4,8 @@
 Graph::Graph(int V)
 {
     if (V <= 0)
-        throw std::invalid_argument( "received negative value" );
-    
+        throw std::invalid_argument("received negative value");
+
     this->V = V;
     this->matrix = new int *[this->V];
     for (int i = 0; i < this->V; i++)
@@ -20,11 +20,13 @@ Graph::Graph(const Graph &other)
 {
     this->V = other.V;
     this->matrix = new int *[this->V];
+    std::cout << "V: " << other.V << std::endl;
+    std::cout << this->V << std::endl;
     for (int i = 0; i < this->V; i++)
     {
         this->matrix[i] = new int[this->V];
         for (int j = 0; j < this->V; j++)
-            this->matrix[i][j] = other.matrix[i][j];
+            this->matrix[i][j] = other.getAdjMatrix()[i][j];
     }
 }
 
@@ -61,16 +63,18 @@ void Graph::removeEdge(int u, int v)
 }
 
 // Print the graph as adjacency list
-void Graph::printGraph()
+std::string Graph::printGraph()
 {
+    std::string graph = "";
+
     for (int i = 0; i < this->V; i++)
     {
-        std::cout << i << " : ";
         for (int j = 0; j < this->V; j++)
             if (this->matrix[i][j] != 0)
-                std::cout << j << " ";
-        std::cout << std::endl;
+                graph += "(" + std::to_string(i) + ", " + std::to_string(j) + ") = " + std::to_string(this->matrix[i][j]) + "\n";
     }
+
+    return graph;
 }
 
 // // Function to get the transpose of the graph
@@ -83,7 +87,7 @@ void Graph::printGraph()
 // 		for (int i = 0; i < graph->V; i++)
 // 		{
 // 			if (graph->G[v][i])
-// 				addEdge(transposed, i, v);
+// 				PLaddedge(transposed, i, v);
 // 		}
 // #endif // ADJ_MATRIX
 
@@ -92,7 +96,7 @@ void Graph::printGraph()
 // 		while (adjNode != NULL)
 // 		{
 // 			int neighbor = adjNode->dest;
-// 			addEdge(transposed, neighbor, v);
+// 			PLaddedge(transposed, neighbor, v);
 // 			adjNode = adjNode->next;
 // 		}
 // #endif // ADJ_LIST

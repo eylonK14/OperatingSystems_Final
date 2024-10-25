@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 #include <deque>
 #include <functional>
@@ -15,7 +17,8 @@
 #include <condition_variable>
 #include <atomic>
 
-class ActiveObject {
+class ActiveObject
+{
 public:
     ActiveObject();
     ~ActiveObject();

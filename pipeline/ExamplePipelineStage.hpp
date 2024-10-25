@@ -17,6 +17,6 @@ private:
     MST* mst;
     std::mutex mtx;
 
-    std::string parse(std::string);
-    void addEdge(std::vector<std::string> &);
+    std::string PLparse(std::string);
+    void PLaddedge(std::string, std::string, std::string);;
 };
