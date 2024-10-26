@@ -1,0 +1,220 @@
+        -:    0:Source:structures/MSTAlgorithmFactory.cpp
+        -:    1:#include "MSTAlgorithmFactory.hpp"
+        -:    2:
+        3:    3:Graph MSTAlgorithmFactory::MSTFactory(Graph &graph, std::string algorithm)
+        -:    4:{
+        3:    5:    if (algorithm == "kruskal")
+        -:    6:    {
+        1:    7:        Graph mst = kruskal(graph);
+        1:    8:        return mst;
+    #####:    9:    }
+        2:   10:    else if (algorithm == "prim")
+        -:   11:    {
+        1:   12:        Graph mst = prim(graph);
+        1:   13:        return mst;
+        1:   14:    }
+        1:   15:    else if (algorithm == "boruvka")
+        -:   16:    {
+        1:   17:        Graph mst = boruvka(graph);
+        1:   18:        return mst;
+        1:   19:    }
+    #####:   20:    return graph;
+        -:   21:}
+        -:   22:
+        1:   23:Graph MSTAlgorithmFactory::prim(Graph &graph)
+        -:   24:{
+        2:   25:    int V = graph.getV();
+       1*:   26:    int **adjMatrix = new int *[V];
+        6:   27:    for (int i = 0; i < V; i++)
+       5*:   28:        adjMatrix[i] = new int[V];
+        -:   29:
+        6:   30:    for (int i = 0; i < V; i++)
+       30:   31:        for (int j = 0; j < V; j++)
+       25:   32:            adjMatrix[i][j] = graph.getAdjMatrix()[i][j];
+        -:   33:
+        -:   34:    // Array to store constructed MST
+        1:   35:    int parent[V];
+        -:   36:    // Key values used to pick minimum weight edge in cut
+        1:   37:    int key[V];
+        -:   38:    // To represent set of vertices included in MST
+        1:   39:    bool mstSet[V];
+        -:   40:
+        -:   41:    // Initialize all keys as INFINITE
+        6:   42:    for (int i = 0; i < V; i++)
+        5:   43:        key[i] = INT_MAX, mstSet[i] = false;
+        -:   44:
+        -:   45:    // Always include first 1st vertex in MST.
+        -:   46:    // Make key 0 so that this vertex is picked as first
+        -:   47:    // vertex.
+        1:   48:    key[0] = 0;
+        -:   49:
+        -:   50:    // First node is always root of MST
+        1:   51:    parent[0] = -1;
+        -:   52:
+        -:   53:    // The MST will have V vertices
+        5:   54:    for (int count = 0; count < V - 1; count++)
+        -:   55:    {
+        -:   56:        // Pick the minimum key vertex from the
+        -:   57:        // set of vertices not yet included in MST
+        4:   58:        int u = minKey(key, mstSet, V);
+        -:   59:
+        -:   60:        // Add the picked vertex to the MST Set
+        4:   61:        mstSet[u] = true;
+        -:   62:
+        -:   63:        // Update key value and parent index of
+        -:   64:        // the adjacent vertices of the picked vertex.
+        -:   65:        // Consider only those vertices which are not
+        -:   66:        // yet included in MST
+       24:   67:        for (int v = 0; v < V; v++)
+        -:   68:            // graph[u][v] is non zero only for adjacent
+        -:   69:            // vertices of m mstSet[v] is false for vertices
+        -:   70:            // not yet included in MST Update the key only
+        -:   71:            // if graph[u][v] is smaller than key[v]
+       20:   72:            if (adjMatrix[u][v] && mstSet[v] == false && adjMatrix[u][v] < key[v])
+        5:   73:                parent[v] = u, key[v] = adjMatrix[u][v];
+        -:   74:    }
+        -:   75:
+        -:   76:    // Create the MST graph
+        1:   77:    Graph mstGraph(V);
+        5:   78:    for (int i = 1; i < V; i++)
+        -:   79:    {
+        4:   80:        mstGraph.addEdge(parent[i], i, adjMatrix[i][parent[i]]);
+        -:   81:    }
+        -:   82:
+        1:   83:    return mstGraph;
+        1:   84:}
+        -:   85:
+        1:   86:Graph MSTAlgorithmFactory::kruskal(Graph &graph)
+        -:   87:{
+        -:   88:    // Get all edges from the adjacency matrix
+        1:   89:    std::vector<std::vector<int>> edgeList;
+        1:   90:    int V = graph.getV();
+       1*:   91:    int **adjMatrix = new int *[V];
+        6:   92:    for (int i = 0; i < V; i++)
+       5*:   93:        adjMatrix[i] = new int[V];
+        -:   94:
+        6:   95:    for (int i = 0; i < V; i++)
+       30:   96:        for (int j = 0; j < V; j++)
+       25:   97:            adjMatrix[i][j] = graph.getAdjMatrix()[i][j];
+        -:   98:
+        6:   99:    for (int i = 0; i < V; i++)
+       15:  100:        for (int j = i + 1; j < V; j++) // To avoid duplicates, use only upper triangle of matrix
+       10:  101:            if (adjMatrix[i][j] != 0)
+       12:  102:                edgeList.push_back({adjMatrix[i][j], i, j});
+        -:  103:
+        -:  104:    // Sort all edges by their weight
+        1:  105:    sort(edgeList.begin(), edgeList.end());
+        -:  106:
+        -:  107:    // Initialize the DSU
+        1:  108:    UnionFind s(V);
+        -:  109:
+        -:  110:    // Create a new adjacency matrix to store the MST
+        1:  111:    Graph mst(V);
+        -:  112:
+        5:  113:    for (auto edge : edgeList)
+        -:  114:    {
+        4:  115:        int w = edge[0];
+        4:  116:        int x = edge[1];
+        4:  117:        int y = edge[2];
+        -:  118:
+        -:  119:        // Take this edge in MST if it does not form a cycle
+        4:  120:        if (s.find(x) != s.find(y))
+        -:  121:        {
+        4:  122:            s.unite(x, y);
+        4:  123:            mst.addEdge(x, y, w);
+        -:  124:        }
+        4:  125:    }
+        1:  126:    return mst; // Return the MST adjacency matrix
+        1:  127:}
+        -:  128:
+        1:  129:Graph MSTAlgorithmFactory::boruvka(Graph &graph)
+        -:  130:{
+        1:  131:    int V = graph.getV();
+       1*:  132:    int **adj = new int *[V];
+        6:  133:    for (int i = 0; i < V; i++)
+       5*:  134:        adj[i] = new int[V];
+        -:  135:
+        6:  136:    for (int i = 0; i < V; i++)
+       30:  137:        for (int j = 0; j < V; j++)
+       25:  138:            adj[i][j] = graph.getAdjMatrix()[i][j];
+        -:  139:
+        -:  140:    // Create a new graph to represent the MST
+        1:  141:    Graph mst(V);
+        -:  142:
+        1:  143:    UnionFind s(V);
+        -:  144:
+        1:  145:    int numTrees = V;
+        1:  146:    int MSTweight = 0;
+        -:  147:
+        -:  148:    // Keep combining components (or sets) until there is only one tree
+        3:  149:    while (numTrees > 1)
+        -:  150:    {
+        -:  151:        // Array to store the cheapest edge for each component
+        2:  152:        std::vector<std::vector<int>> cheapest(V, std::vector<int>(3, -1)); // [u, v, weight]
+        -:  153:
+        -:  154:        // Traverse all edges to find the cheapest edge for each component
+       12:  155:        for (int u = 0; u < V; u++)
+        -:  156:        {
+       60:  157:            for (int v = 0; v < V; v++)
+        -:  158:            {
+       50:  159:                if (adj[u][v] != 0)
+        -:  160:                { // There is an edge between u and v
+       16:  161:                    int set1 = s.find(u);
+       16:  162:                    int set2 = s.find(v);
+        -:  163:
+       16:  164:                    if (set1 != set2)
+        -:  165:                    {
+        -:  166:                        // If it's the first edge for this component or a cheaper one
+       10:  167:                        if (cheapest[set1][2] == -1 || cheapest[set1][2] > adj[u][v])
+        -:  168:                        {
+        3:  169:                            cheapest[set1] = {u, v, adj[u][v]};
+        -:  170:                        }
+       10:  171:                        if (cheapest[set2][2] == -1 || cheapest[set2][2] > adj[u][v])
+        -:  172:                        {
+        4:  173:                            cheapest[set2] = {u, v, adj[u][v]};
+        -:  174:                        }
+        -:  175:                    }
+        -:  176:                }
+        -:  177:            }
+        -:  178:        }
+        -:  179:
+        -:  180:        // Consider the cheapest edges and add them to the MST
+       12:  181:        for (int node = 0; node < V; node++)
+        -:  182:        {
+       10:  183:            if (cheapest[node][2] != -1)
+        -:  184:            { // If there is a cheapest edge
+        7:  185:                int u = cheapest[node][0];
+        7:  186:                int v = cheapest[node][1];
+        7:  187:                int weight = cheapest[node][2];
+        -:  188:
+        7:  189:                int set1 = s.find(u);
+        7:  190:                int set2 = s.find(v);
+        -:  191:
+        7:  192:                if (set1 != set2)
+        -:  193:                {
+        -:  194:                    // Include this edge in MST
+        4:  195:                    mst.addEdge(u, v, weight);
+        4:  196:                    MSTweight += weight;
+        -:  197:
+        -:  198:                    // Perform union of the two components
+        4:  199:                    s.unite(set1, set2);
+        4:  200:                    numTrees--;
+        -:  201:                }
+        -:  202:            }
+        -:  203:        }
+        2:  204:    }
+        -:  205:
+        1:  206:    return mst;
+        1:  207:}
+        -:  208:
+        4:  209:int MSTAlgorithmFactory::minKey(int key[], bool mstSet[], int V)
+        -:  210:{
+        -:  211:    // Initialize min value
+        4:  212:    int min = INT_MAX, min_index;
+        -:  213:
+       24:  214:    for (int v = 0; v < V; v++)
+       20:  215:        if (mstSet[v] == false && key[v] < min)
+        4:  216:            min = key[v], min_index = v;
+        -:  217:
+        4:  218:    return min_index;
+        -:  219:}

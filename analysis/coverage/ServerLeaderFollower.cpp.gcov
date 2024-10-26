@@ -1,0 +1,413 @@
+        -:    0:Source:leaderfollower/ServerLeaderFollower.cpp
+        -:    0:Graph:leaderfollower/ServerLeaderFollower.gcno
+        -:    0:Data:leaderfollower/ServerLeaderFollower.gcda
+        -:    0:Runs:2
+        -:    0:Source is newer than graph
+        -:    1:#include "ServerLeaderFollower.hpp"
+        -:    2:
+        2:    3:LFServer::LFServer(int port, int numThreads) : port(port), numThreads(numThreads), isLeaderAvailable(true)
+        -:    4:{
+        -:    5:    // Initialize the LFServer socket (same as before)
+        2:    6:    LFServer_fd = socket(AF_INET, SOCK_STREAM, 0);
+        2:    7:    if (LFServer_fd == -1)
+        -:    8:    {
+    #####:    9:        perror("socket failed");
+    #####:   10:        exit(EXIT_FAILURE);
+        -:   11:    }
+        -:   12:
+        -:   13:    // Set socket options
+        2:   14:    int opt = 1;
+        2:   15:    if (setsockopt(LFServer_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
+        -:   16:    {
+    #####:   17:        perror("setsockopt failed");
+    #####:   18:        close(LFServer_fd);
+    #####:   19:        exit(EXIT_FAILURE);
+        -:   20:    }
+        -:   21:
+        -:   22:    // Bind to the specified port
+        -:   23:    struct sockaddr_in address;
+        2:   24:    memset(&address, 0, sizeof(address));
+        2:   25:    address.sin_family = AF_INET;         // IPv4
+        2:   26:    address.sin_addr.s_addr = INADDR_ANY; // Any address
+        2:   27:    address.sin_port = htons(port);
+        -:   28:
+        2:   29:    if (bind(LFServer_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
+        -:   30:    {
+    #####:   31:        perror("bind failed");
+    #####:   32:        close(LFServer_fd);
+    #####:   33:        exit(EXIT_FAILURE);
+        -:   34:    }
+        -:   35:
+        -:   36:    // Start listening
+        2:   37:    if (listen(LFServer_fd, SOMAXCONN) < 0)
+        -:   38:    {
+    #####:   39:        perror("listen failed");
+    #####:   40:        close(LFServer_fd);
+    #####:   41:        exit(EXIT_FAILURE);
+        -:   42:    }
+        -:   43:
+        -:   44:    // Set LFServer_fd to non-blocking
+        2:   45:    int flags = fcntl(LFServer_fd, F_GETFL, 0);
+        2:   46:    fcntl(LFServer_fd, F_SETFL, flags | O_NONBLOCK);
+        -:   47:
+        -:   48:    // Initialize poll_fds with LFServer_fd
+        -:   49:    struct pollfd LFServer_poll_fd;
+        2:   50:    LFServer_poll_fd.fd = LFServer_fd;
+        2:   51:    LFServer_poll_fd.events = POLLIN;
+        2:   52:    poll_fds.push_back(LFServer_poll_fd);
+        2:   53:}
+        -:   54:
+    #####:   55:LFServer::~LFServer()
+        -:   56:{
+    #####:   57:    close(LFServer_fd);
+    #####:   58:    for (int fd : client_fds)
+        -:   59:    {
+    #####:   60:        close(fd);
+        -:   61:    }
+    #####:   62:}
+        -:   63:
+        2:   64:void LFServer::run()
+        -:   65:{
+        -:   66:    // Create the thread pool
+       22:   67:    for (int i = 0; i < numThreads; ++i)
+        -:   68:    {
+       20:   69:        threads.emplace_back(&LFServer::workerThread, this);
+        -:   70:    }
+        -:   71:
+        -:   72:    // Wait for threads to finish (they won't unless the LFServer is stopped)
+       2*:   73:    for (auto &thread : threads)
+        -:   74:    {
+        2:   75:        thread.join();
+        -:   76:    }
+    #####:   77:}
+        -:   78:
+       20:   79:void LFServer::workerThread()
+        -:   80:{
+        -:   81:    while (true)
+        -:   82:    {
+        -:   83:        // Leader-Follower pattern implementation
+        -:   84:        {
+       46:   85:            std::unique_lock<std::mutex> lock(mutex_);
+        -:   86:            // Wait until this thread can become the leader
+       28:   87:            condVar.wait(lock, [this]()
+       28:   88:                         { return isLeaderAvailable; });
+        -:   89:            // Become the leader
+       28:   90:            isLeaderAvailable = false;
+       28:   91:            leaderThreadId = std::this_thread::get_id();
+       28:   92:        }
+        -:   93:
+        -:   94:        // Leader thread waits for events
+       28:   95:        int timeout = -1; // Wait indefinitely
+        -:   96:        int poll_count;
+        -:   97:
+        -:   98:        {
+        -:   99:            // Lock the mutex while accessing poll_fds
+       28:  100:            std::unique_lock<std::mutex> lock(mutex_);
+       28:  101:            poll_count = poll(poll_fds.data(), poll_fds.size(), timeout);
+       28:  102:        }
+        -:  103:
+       28:  104:        if (poll_count < 0)
+        -:  105:        {
+    #####:  106:            perror("poll failed");
+    #####:  107:            break;
+        -:  108:        }
+        -:  109:
+        -:  110:        // Before handling events, promote a follower to leader
+        -:  111:        {
+       28:  112:            std::unique_lock<std::mutex> lock(mutex_);
+       28:  113:            isLeaderAvailable = true;
+       28:  114:            condVar.notify_one();
+       28:  115:        }
+        -:  116:
+        -:  117:        // Now handle events (as the previous leader)
+        -:  118:        {
+       28:  119:            std::unique_lock<std::mutex> lock(mutex_);
+       82:  120:            for (size_t i = 0; i < poll_fds.size(); ++i)
+        -:  121:            {
+       56:  122:                if (poll_fds[i].revents & POLLIN)
+        -:  123:                {
+       28:  124:                    if (poll_fds[i].fd == LFServer_fd)
+        -:  125:                    {
+        -:  126:                        // Accept new connection
+        2:  127:                        acceptNewConnection();
+        -:  128:                    }
+        -:  129:                    else
+        -:  130:                    {
+        -:  131:                        // Handle data from client
+       26:  132:                        int client_fd = poll_fds[i].fd;
+       26:  133:                        handleClientData(client_fd);
+        -:  134:                    }
+        -:  135:                }
+        -:  136:            }
+       26:  137:        }
+       26:  138:    }
+    #####:  139:}
+        -:  140:
+        2:  141:void LFServer::acceptNewConnection()
+        -:  142:{
+        2:  143:    int new_socket = accept(LFServer_fd, NULL, NULL);
+        2:  144:    if (new_socket < 0)
+        -:  145:    {
+    #####:  146:        if (errno != EWOULDBLOCK && errno != EAGAIN)
+        -:  147:        {
+    #####:  148:            perror("accept failed");
+        -:  149:        }
+    #####:  150:        return;
+        -:  151:    }
+        -:  152:
+        -:  153:    // Set new_socket to non-blocking
+        2:  154:    int flags = fcntl(new_socket, F_GETFL, 0);
+        2:  155:    fcntl(new_socket, F_SETFL, flags | O_NONBLOCK);
+        -:  156:
+        -:  157:    // Add new_socket to poll_fds
+        -:  158:    struct pollfd client_poll_fd;
+        2:  159:    client_poll_fd.fd = new_socket;
+        2:  160:    client_poll_fd.events = POLLIN;
+        2:  161:    poll_fds.push_back(client_poll_fd);
+        2:  162:    client_fds.push_back(new_socket);
+        2:  163:    client_buffers[new_socket] = "";
+        -:  164:
+        2:  165:    std::cout << "New client connected: FD " << new_socket << std::endl;
+        -:  166:}
+        -:  167:
+       26:  168:void LFServer::handleClientData(int client_fd)
+        -:  169:{
+        -:  170:    char buffer[1024];
+       26:  171:    ssize_t bytes_read = read(client_fd, buffer, sizeof(buffer));
+        -:  172:
+       26:  173:    if (bytes_read <= 0)
+        -:  174:    {
+    #####:  175:        if (bytes_read == 0 || (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN))
+        -:  176:        {
+        -:  177:            // Client disconnected or error
+    #####:  178:            std::cout << "Client disconnected: FD " << client_fd << std::endl;
+    #####:  179:            close(client_fd);
+        -:  180:
+        -:  181:            // Remove from poll_fds
+    #####:  182:            auto it = std::find_if(poll_fds.begin(), poll_fds.end(), [client_fd](const struct pollfd &pfd)
+    #####:  183:                                   { return pfd.fd == client_fd; });
+    #####:  184:            if (it != poll_fds.end())
+        -:  185:            {
+    #####:  186:                poll_fds.erase(it);
+        -:  187:            }
+        -:  188:
+    #####:  189:            client_fds.erase(std::remove(client_fds.begin(), client_fds.end(), client_fd), client_fds.end());
+    #####:  190:            client_buffers.erase(client_fd);
+        -:  191:        }
+        -:  192:    }
+        -:  193:    else
+        -:  194:    {
+        -:  195:        // Append to client's buffer
+       26:  196:        client_buffers[client_fd].append(buffer, bytes_read);
+        -:  197:
+        -:  198:        // Check for complete message (e.g., newline-terminated)
+        -:  199:        size_t pos;
+       50:  200:        while ((pos = client_buffers[client_fd].find('\n')) != std::string::npos)
+        -:  201:        {
+       26:  202:            std::string message = client_buffers[client_fd].substr(0, pos);
+       26:  203:            client_buffers[client_fd].erase(0, pos + 1);
+        -:  204:
+        -:  205:            // Process message (synchronously for simplicity)
+        -:  206:            // In practice, you might use a task queue or dispatch to another thread
+       26:  207:            std::string response = processClientMessage(message);
+       24:  208:            write(client_fd, response.c_str(), response.length());
+       24:  209:        }
+        -:  210:    }
+       24:  211:}
+        -:  212:
+       26:  213:std::string LFServer::processClientMessage(const std::string &message)
+        -:  214:{
+        -:  215:    // Parse the message
+       26:  216:    std::string response = LFparse(message);
+       24:  217:    return response;
+        -:  218:}
+        -:  219:
+        1:  220:std::string LFprintMenu()
+        -:  221:{
+        1:  222:    std::stringstream ss;
+        1:  223:    ss << "Menu:\n";
+        1:  224:    ss << " 1. Create New Graph           - `newgraph v e`\n";
+        1:  225:    ss << " 2. Add Edge                   - `addedge i j w`\n";
+        1:  226:    ss << " 3. Remove Edge                - `removeedge i j`\n";
+        1:  227:    ss << " 4. Compute MST                - `boruvka`/`kruskal`/`prim`\n";
+        1:  228:    ss << " 5. Get Longest Path           - `longestpath`\n";
+        1:  229:    ss << " 6. Get Shortest Path          - `shortestpath\n";
+        1:  230:    ss << " 7. Get Average Path           - `avgpath`\n";
+        1:  231:    ss << " 8. Get Total Path             - `totalweight`\n";
+        1:  232:    ss << " 9. Print                      - `print`\n";
+        1:  233:    ss << "10. Exit                       - `exit`\n";
+        1:  234:    ss << "11. Help (show this help text) - `help`\n";
+        2:  235:    return ss.str();
+        1:  236:}
+        -:  237:
+        7:  238:void LFServer::LFaddedge(std::string uStr, std::string vStr, std::string wStr)
+        -:  239:{
+        7:  240:    int u = 0, v = 0, w = 0;
+        7:  241:    std::cout << "Adding edge " << uStr << " " << vStr << " " << wStr << "\n";
+        -:  242:    try
+        -:  243:    {
+        7:  244:        u = std::stoi(uStr) - 1;
+        7:  245:        v = std::stoi(vStr) - 1;
+        7:  246:        w = std::stoi(wStr);
+        7:  247:        std::cout << "Adding edge " << u << " " << v << " " << w << "\n";
+        7:  248:        this->graph->addEdge(u, v, w);
+        -:  249:    }
+    =====:  250:    catch (const std::invalid_argument &)
+        -:  251:    {
+    =====:  252:        std::cerr << "Invalid arguments for LFaddedge!\n";
+    =====:  253:    }
+        7:  254:}
+        -:  255:
+       26:  256:std::string LFServer::LFparse(std::string input)
+        -:  257:{
+       26:  258:    std::string result;
+       26:  259:    int n = 0, m = 0, u = 0, v = 0;
+        -:  260:
+        -:  261:    // Remove trailing newline character if present
+      26*:  262:    if (!input.empty() && input.back() == '\n')
+    #####:  263:        input.pop_back();
+        -:  264:
+        -:  265:    // Use a string stream to tokenize the input
+       26:  266:    std::istringstream iss(input);
+       26:  267:    std::vector<std::string> tokens;
+       26:  268:    std::string token;
+        -:  269:
+       75:  270:    while (iss >> token)
+        -:  271:    {
+       49:  272:        tokens.push_back(token);
+        -:  273:    }
+        -:  274:
+       26:  275:    if (tokens.empty())
+        -:  276:    {
+        -:  277:        // Empty input, do nothing
+    #####:  278:        return "Invalid Command!\n";
+        -:  279:    }
+        -:  280:
+       26:  281:    const std::string &command = tokens[0];
+        -:  282:
+       26:  283:    if (tokens.size() > 1)
+        -:  284:    {
+       11:  285:        if (command == "newgraph" || this->newGraphFlag)
+        -:  286:        {
+        8:  287:            if (this->newGraphFlag)
+        -:  288:            {
+        6:  289:                LFaddedge(tokens[0], tokens[1], tokens[2]);
+        6:  290:                this->counter--;
+        6:  291:                if (this->counter == 0)
+        2:  292:                    this->newGraphFlag = false;
+        -:  293:            }
+        -:  294:            else
+        -:  295:            {
+        -:  296:                try
+        -:  297:                {
+        2:  298:                    n = std::stoi(tokens[1]);
+        2:  299:                    m = std::stoi(tokens[2]);
+        2:  300:                    this->counter = m;
+        2:  301:                    this->graph = new Graph(n);
+        -:  302:
+        2:  303:                    newGraphFlag = true;
+        -:  304:                }
+    =====:  305:                catch (const std::invalid_argument &)
+        -:  306:                {
+    =====:  307:                    std::cerr << "Invalid arguments for newgraph!\n";
+    =====:  308:                }
+        -:  309:            }
+        -:  310:        }
+        3:  311:        else if (command == "addedge")
+        -:  312:        {
+        1:  313:            LFaddedge(tokens[1], tokens[2], tokens[3]);
+        -:  314:
+        1:  315:            result = "Edge added successfully.\n";
+        -:  316:        }
+        2:  317:        else if (command == "removeedge")
+        -:  318:        {
+        -:  319:            try
+        -:  320:            {
+        2:  321:                u = std::stoi(tokens[1]) - 1;
+        2:  322:                v = std::stoi(tokens[2]) - 1;
+        2:  323:                this->graph->removeEdge(u, v);
+        -:  324:            }
+    =====:  325:            catch (const std::invalid_argument &)
+        -:  326:            {
+    =====:  327:                std::cerr << "Invalid arguments for removeedge!\n";
+    =====:  328:            }
+        -:  329:
+        2:  330:            result = "Edge removed successfully.\n";
+        -:  331:        }
+        -:  332:    }
+       15:  333:    else if (command == "kruskal" || command == "prim" || command == "boruvka")
+        -:  334:    {
+        3:  335:        try
+        3:  336:        {
+        -:  337:            if (this->graph != nullptr)
+        3:  338:            {
+        3:  339:                this->mst = new MST(*this->graph, command);
+        -:  340:                result = "Created MST using " + command + " algorithm.\n";
+        -:  341:            }
+        -:  342:            else
+    #####:  343:            {
+        -:  344:                result = "Must create Graph first!";
+        -:  345:            }
+       12:  346:        }
+        -:  347:        catch(const std::exception& e)
+        1:  348:        {
+    #####:  349:            std::cerr << e.what() << '\n';
+        -:  350:        }
+        1:  351:    }
+        -:  352:    else if (command == "longestpath")
+       11:  353:    {
+        -:  354:        if (this->mst == nullptr)
+        1:  355:            result = "Must create MST first!\n";
+    #####:  356:        else
+        -:  357:            result = "Longest path of the MST: " + std::to_string(mst->getLongestDistance()) + ".\n";
+        1:  358:    }
+        -:  359:    else if (command == "shortestpath")
+       10:  360:    {
+        -:  361:        if (this->mst == nullptr)
+        1:  362:            result = "Must create MST first!\n";
+    #####:  363:        else
+        -:  364:            result = "Shortest path of the MST: " + std::to_string(mst->getShortestDistance()) + ".\n";
+        1:  365:    }
+        -:  366:    else if (command == "avgpath")
+        9:  367:    {
+        -:  368:        if (this->mst == nullptr)
+        1:  369:            result = "Must create MST first!\n";
+    #####:  370:        else
+        -:  371:            result = "Average path of the MST: " + std::to_string(mst->getAverageDistance()) + ".\n";
+        1:  372:    }
+        -:  373:    else if (command == "totalweight")
+        8:  374:    {
+        -:  375:        if (this->mst == nullptr)
+        5:  376:            result = "Must create MST first!\n";
+        -:  377:        else
+        5:  378:            result = "Total Weight of the MST: " + std::to_string(mst->getTotalWeight()) + ".\n";
+        5:  379:    }
+        -:  380:    else if (command == "print")
+        5:  381:    {   
+        -:  382:        if (this->graph != nullptr)
+        5:  383:        {
+        5:  384:            result = "Graph:\n";
+        -:  385:            result += this->graph->printGraph();
+        -:  386:        }
+        3:  387:        if (this->mst != nullptr)
+        -:  388:        {
+        2:  389:            result += "MST:\n";
+        -:  390:            result += this->mst->printGraph();
+        1:  391:        }
+        -:  392:    }
+        1:  393:    else if (command == "exit")
+        -:  394:    {
+        -:  395:        exit(EXIT_SUCCESS);
+        -:  396:    }
+        -:  397:    else if (command == "help")
+    #####:  398:    {
+        -:  399:        result = LFprintMenu();
+        -:  400:    }
+       24:  401:    else
+       24:  402:    {
+        -:  403:        // Unrecognized command
+        -:  404:        std::cerr << "Unrecognized command.\n";
+        -:  405:    }
+        -:  406:
+        -:  407:    return result;
+        -:  408:}

@@ -1,0 +1,205 @@
+        -:    0:Source:pipeline/ServerPipelineActiveObject.cpp
+        -:    1:#include "ServerPipelineActiveObject.hpp"
+        -:    2:#include "ActiveObject.hpp"
+        -:    3:#include "ExamplePipelineStage.hpp" // Custom pipeline stages
+        -:    4:#include <sys/types.h>
+        -:    5:#include <sys/socket.h>
+        -:    6:#include <netinet/in.h>
+        -:    7:#include <unistd.h>
+        -:    8:#include <poll.h>
+        -:    9:#include <fcntl.h>
+        -:   10:#include <iostream>
+        -:   11:#include <cstring>
+        -:   12:#include <errno.h>
+        -:   13:#include <algorithm>
+        -:   14:
+        2:   15:PLServer::PLServer(int port) : port(port)
+        -:   16:{
+        -:   17:    // Initialize the PLServer socket
+        2:   18:    PLServer_fd = socket(AF_INET, SOCK_STREAM, 0);
+        2:   19:    if (PLServer_fd == -1)
+        -:   20:    {
+    #####:   21:        perror("socket failed");
+    #####:   22:        exit(EXIT_FAILURE);
+        -:   23:    }
+        -:   24:
+        -:   25:    // Set socket options to reuse address and port
+        2:   26:    int opt = 1;
+        2:   27:    if (setsockopt(PLServer_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)))
+        -:   28:    {
+    #####:   29:        perror("setsockopt failed");
+    #####:   30:        close(PLServer_fd);
+    #####:   31:        exit(EXIT_FAILURE);
+        -:   32:    }
+        -:   33:
+        -:   34:    // Bind to the specified port
+        -:   35:    struct sockaddr_in address;
+        2:   36:    memset(&address, 0, sizeof(address));
+        2:   37:    address.sin_family = AF_INET;         // IPv4
+        2:   38:    address.sin_addr.s_addr = INADDR_ANY; // Any address
+        2:   39:    address.sin_port = htons(port);
+        -:   40:
+        2:   41:    if (bind(PLServer_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
+        -:   42:    {
+    #####:   43:        perror("bind failed");
+    #####:   44:        close(PLServer_fd);
+    #####:   45:        exit(EXIT_FAILURE);
+        -:   46:    }
+        -:   47:
+        -:   48:    // Start listening
+        2:   49:    if (listen(PLServer_fd, SOMAXCONN) < 0)
+        -:   50:    {
+    #####:   51:        perror("listen failed");
+    #####:   52:        close(PLServer_fd);
+    #####:   53:        exit(EXIT_FAILURE);
+        -:   54:    }
+        -:   55:
+        -:   56:    // Set PLServer_fd to non-blocking
+        2:   57:    int flags = fcntl(PLServer_fd, F_GETFL, 0);
+        2:   58:    fcntl(PLServer_fd, F_SETFL, flags | O_NONBLOCK);
+        -:   59:
+        -:   60:    // Initialize pipeline and add stages
+        2:   61:    pipeline.addStage(std::make_shared<ExamplePipelineStage>());
+        -:   62:    // Add more stages as needed
+        2:   63:}
+        -:   64:
+    #####:   65:PLServer::~PLServer()
+        -:   66:{
+    #####:   67:    close(PLServer_fd);
+    #####:   68:    for (auto &client : clients)
+        -:   69:    {
+    #####:   70:        close(client.first);
+        -:   71:    }
+    #####:   72:}
+        -:   73:
+       31:   74:void PLServer::handleClientData(int client_fd, std::vector<pollfd> &poll_fds) {
+        -:   75:    char buffer[1024];
+       31:   76:    ssize_t bytes_read = read(client_fd, buffer, sizeof(buffer));
+        -:   77:
+       31:   78:    if (bytes_read <= 0) {
+    #####:   79:        if (bytes_read == 0 || (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN)) {
+        -:   80:            // Client disconnected or error
+    #####:   81:            std::cout << "Client disconnected: FD " << client_fd << std::endl;
+    #####:   82:            close(client_fd);
+        -:   83:
+        -:   84:            // Remove from poll_fds
+    #####:   85:            auto it = std::find_if(poll_fds.begin(), poll_fds.end(), [client_fd](const struct pollfd& pfd) {
+    #####:   86:                return pfd.fd == client_fd;
+        -:   87:            });
+    #####:   88:            if (it != poll_fds.end()) {
+    #####:   89:                poll_fds.erase(it);
+        -:   90:            }
+        -:   91:
+        -:   92:            // Remove client from clients map
+        -:   93:            {
+    #####:   94:                std::lock_guard<std::mutex> lock(client_mutex);
+    #####:   95:                clients.erase(client_fd);
+    #####:   96:            }
+        -:   97:        }
+        -:   98:    } else {
+       31:   99:        std::shared_ptr<ClientConnection> client;
+        -:  100:        {
+       31:  101:            std::lock_guard<std::mutex> lock(client_mutex);
+       31:  102:            auto it = clients.find(client_fd);
+       31:  103:            if (it != clients.end()) {
+       31:  104:                client = it->second;
+       31:  105:                client->buffer.append(buffer, bytes_read);
+        -:  106:            } else {
+        -:  107:                // Client not found, maybe disconnected
+    #####:  108:                return;
+        -:  109:            }
+       31:  110:        }
+        -:  111:
+        -:  112:        // Check for complete messages (newline-terminated)
+        -:  113:        size_t pos;
+       62:  114:        while ((pos = client->buffer.find('\n')) != std::string::npos) {
+       31:  115:            std::string message = client->buffer.substr(0, pos);
+       31:  116:            client->buffer.erase(0, pos + 1);
+        -:  117:
+        -:  118:            // Process message through the pipeline
+       31:  119:            std::weak_ptr<ClientConnection> client_weak = client;
+       31:  120:            pipeline.process(message, [this, client_weak](const std::string& output) {
+        -:  121:                // Output callback executed in another thread
+       29:  122:                if (auto client = client_weak.lock()) {
+       29:  123:                    int fd = client->fd;
+       29:  124:                    std::string response = output + "\n";
+       29:  125:                    ssize_t bytes_written = write(fd, response.c_str(), response.length());
+       29:  126:                    if (bytes_written < 0) {
+    #####:  127:                        perror("write failed");
+        -:  128:                    }
+       29:  129:                } else {
+        -:  130:                    // Client has disconnected
+    #####:  131:                    std::cout << "Client disconnected before output could be sent" << std::endl;
+       29:  132:                }
+       29:  133:            });
+       31:  134:        }
+       31:  135:    }
+        -:  136:}
+        -:  137:
+        2:  138:void PLServer::run()
+        -:  139:{
+        -:  140:    // Use poll to handle multiple clients
+        2:  141:    std::vector<struct pollfd> poll_fds;
+        -:  142:
+        -:  143:    // Add PLServer_fd to poll_fds
+        -:  144:    struct pollfd PLServer_poll_fd;
+        2:  145:    PLServer_poll_fd.fd = PLServer_fd;
+        2:  146:    PLServer_poll_fd.events = POLLIN;
+        2:  147:    poll_fds.push_back(PLServer_poll_fd);
+        -:  148:
+        -:  149:    while (true)
+        -:  150:    {
+       35:  151:        int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
+       33:  152:        if (poll_count < 0)
+        -:  153:        {
+    #####:  154:            perror("poll failed");
+    #####:  155:            break;
+        -:  156:        }
+       99:  157:        for (size_t i = 0; i < poll_fds.size(); ++i) 
+        -:  158:        {
+       66:  159:            if (poll_fds[i].revents & POLLIN)
+        -:  160:            {
+       33:  161:                if (poll_fds[i].fd == PLServer_fd) 
+        -:  162:                {
+        -:  163:                    // Accept new connection
+        2:  164:                    int new_socket = accept(PLServer_fd, NULL, NULL);
+       2*:  165:                    if (new_socket < 0) {
+        -:  166:                        // ... Error handling ...
+    #####:  167:                        if (errno != EWOULDBLOCK && errno != EAGAIN)
+    #####:  168:                            perror("accept failed");
+    #####:  169:                        continue;
+        -:  170:                    }
+        -:  171:
+        -:  172:                    // Set new_socket to non-blocking
+        2:  173:                    int flags = fcntl(new_socket, F_GETFL, 0);
+        2:  174:                    fcntl(new_socket, F_SETFL, flags | O_NONBLOCK);
+        -:  175:
+        -:  176:                    // Create a new ClientConnection
+        2:  177:                    auto client = std::make_shared<ClientConnection>();
+        2:  178:                    client->fd = new_socket;
+        2:  179:                    client->buffer = "";
+        -:  180:
+        -:  181:                    // Add client to clients map
+        -:  182:                    {
+        2:  183:                        std::lock_guard<std::mutex> lock(client_mutex);
+        2:  184:                        clients[new_socket] = client;
+        2:  185:                    }
+        -:  186:
+        -:  187:                    // Add new_socket to poll_fds
+        -:  188:                    struct pollfd client_poll_fd;
+        2:  189:                    client_poll_fd.fd = new_socket;
+        2:  190:                    client_poll_fd.events = POLLIN;
+        2:  191:                    poll_fds.push_back(client_poll_fd);
+        -:  192:
+        2:  193:                    std::cout << "New client connected: FD " << new_socket << std::endl;
+        2:  194:                }
+        -:  195:                else 
+        -:  196:                {
+        -:  197:                    // Handle data from client
+       31:  198:                    int client_fd = poll_fds[i].fd;
+       31:  199:                    handleClientData(client_fd, poll_fds);
+        -:  200:                }
+        -:  201:            }
+        -:  202:        }
+       33:  203:    }
+    #####:  204:}

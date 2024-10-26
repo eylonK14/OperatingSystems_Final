@@ -332,14 +332,21 @@ std::string LFServer::LFparse(std::string input)
     }
     else if (command == "kruskal" || command == "prim" || command == "boruvka")
     {
-        if (this->graph != nullptr)
+        try
         {
-            this->mst = new MST(*this->graph, command);
-            result = "Created MST using " + command + " algorithm.\n";
+            if (this->graph != nullptr)
+            {
+                this->mst = new MST(*this->graph, command);
+                result = "Created MST using " + command + " algorithm.\n";
+            }
+            else
+            {
+                result = "Must create Graph first!";
+            }
         }
-        else 
+        catch(const std::exception& e)
         {
-            result = "Must create Graph first!";
+            std::cerr << e.what() << '\n';
         }
     }
     else if (command == "longestpath")

@@ -1,0 +1,10 @@
+==9190== Helgrind, a thread error detector
+==9190== Copyright (C) 2007-2017, and GNU GPL'd, by OpenWorks LLP et al.
+==9190== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==9190== Command: ./Main --pl -p 1235
+==9190== Parent PID: 731
+==9190== 
+==9190== 
+==9190== Use --history-level=approx or =none to gain increased speed, at
+==9190== the cost of reduced accuracy of conflicting-access information
+==9190== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

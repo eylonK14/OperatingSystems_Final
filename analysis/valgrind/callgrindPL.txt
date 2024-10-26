@@ -1,0 +1,12 @@
+==11151== Callgrind, a call-graph generating cache profiler
+==11151== Copyright (C) 2002-2017, and GNU GPL'd, by Josef Weidendorfer et al.
+==11151== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==11151== Command: ./Main --pl -p 1235
+==11151== Parent PID: 731
+==11151== 
+==11151== For interactive control, run 'callgrind_control -h'.
+==11151== 
+==11151== Events    : Ir
+==11151== Collected : 3842804
+==11151== 
+==11151== I   refs:      3,842,804

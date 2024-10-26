@@ -1,0 +1,121 @@
+        -:    0:Source:Main.cpp
+        -:    0:Graph:Main.gcno
+        -:    0:Data:Main.gcda
+        -:    0:Runs:8
+        -:    1:#include <getopt.h>
+        -:    2:#include <iostream>
+        -:    3:
+        -:    4:#include "pipeline/ServerPipelineActiveObject.hpp"
+        -:    5:#include "leaderfollower/ServerLeaderFollower.hpp"
+        -:    6:
+        3:    7:void printUsage(char *argv)
+        -:    8:{
+        3:    9:    std::cout << "Usage: " << argv << " [-h/--help] [--lf <leaderfollower threads>/--pl] [-p/--port <port>]" << std::endl;
+        3:   10:}
+        -:   11:
+        8:   12:int main(int argc, char *argv[])
+        -:   13:{
+        -:   14:    int c;
+        8:   15:    bool lf = false;
+        8:   16:    bool pipeline = false;
+        8:   17:    int leaderFollowerThreads = 0;
+        8:   18:    int port = 0;
+        -:   19:
+        8:   20:    if (argc == 1)
+        -:   21:    {
+        1:   22:        std::cout << "No arguments provided" << std::endl;
+        1:   23:        printUsage(argv[0]);
+        1:   24:        return 1;
+        -:   25:    }
+        7:   26:    if (argc > 5)
+        -:   27:    {
+        1:   28:        std::cout << "Too many arguments" << std::endl;
+        1:   29:        printUsage(argv[0]);
+        1:   30:        return 1;
+        -:   31:    }
+        -:   32:
+        -:   33:    while (1)
+        -:   34:    {
+       15:   35:        int option_index = 0;
+        -:   36:        static struct option long_options[] = {
+        -:   37:            {"help", no_argument, 0, 0},
+        -:   38:            {"pl", no_argument, 0, 0},
+        -:   39:            {"lf", required_argument, 0, 0},
+        -:   40:            {"port", required_argument, 0, 0},
+        -:   41:            {0, 0, 0, 0}};
+        -:   42:
+       15:   43:        c = getopt_long(argc, argv, "h:p:",
+        -:   44:                        long_options, &option_index);
+       15:   45:        if (c == -1)
+        6:   46:            break;
+        -:   47:
+        9:   48:        if (c == 0)
+        -:   49:        {
+        3:   50:            std::cout << "option " << long_options[option_index].name << std::endl;
+        3:   51:            if (optarg)
+        1:   52:                std::cout << "with arg " << optarg << std::endl;
+        3:   53:            std::string optionStr = long_options[option_index].name;
+        3:   54:            if (optionStr == "pl")
+        1:   55:                pipeline = true;
+        3:   56:            if (optionStr == "lf")
+        -:   57:            {
+        1:   58:                lf = true;
+        1:   59:                if (optarg)
+        -:   60:                {
+        2:   61:                    leaderFollowerThreads = std::stoi(optarg);
+        -:   62:                }
+        -:   63:                else
+        -:   64:                {
+    #####:   65:                    std::cout << "leaderfollower requires a number of threads" << std::endl;
+    #####:   66:                    return 1;
+        -:   67:                }
+        -:   68:            }
+        3:   69:            if (optionStr == "port")
+        -:   70:            {
+    #####:   71:                if (optarg)
+        -:   72:                {
+    #####:   73:                    port = std::stoi(optarg);
+        -:   74:                }
+        -:   75:                else
+        -:   76:                {
+    #####:   77:                    std::cout << "port requires a value" << std::endl;
+        -:   78:                }
+        -:   79:            }
+        3:   80:            if (optionStr == "help")
+        1:   81:                printUsage(argv[0]);
+        3:   82:            std::cout << std::endl;
+        3:   83:        }
+        -:   84:
+        6:   85:        else if (c == 'h')
+    #####:   86:            printUsage(argv[0]);
+        -:   87:
+        6:   88:        else if (c == 'p')
+        3:   89:            port = atoi(optarg);
+        -:   90:
+        -:   91:        else
+        3:   92:            std::cout << "?? getopt returned character code 0" << c << " ??" << std::endl;
+        9:   93:    }
+        -:   94:
+        6:   95:    if (lf && pipeline)
+        -:   96:    {
+    #####:   97:        std::cout << "cannot have both leaderfollower and pipeline" << std::endl;
+    #####:   98:        return 1;
+        -:   99:    }
+        -:  100:
+        6:  101:    std::cout << "port: " << port << std::endl;
+        6:  102:    std::cout << "lf: " << lf << ", leaderFollowerThreads: " << leaderFollowerThreads << std::endl;
+        6:  103:    std::cout << "pl: " << pipeline << std::endl;
+        -:  104:
+        6:  105:    if (pipeline)
+        -:  106:    {
+        1:  107:        PLServer server(port);
+        1:  108:        server.run();
+    #####:  109:    }
+        5:  110:    else if (lf)
+        -:  111:    {
+        1:  112:        LFServer server(port, leaderFollowerThreads);
+        1:  113:        server.run();
+    #####:  114:    }
+        -:  115:
+        4:  116:    return 0;
+        -:  117:}

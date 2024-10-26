@@ -73,10 +73,21 @@ The project is organized into several directories, each serving a specific purpo
      - `MSTAlgorithmFactory.cpp` and `MSTAlgorithmFactory.hpp`: Factory for creating MST algorithms.
      - `UnionFind.cpp` and `UnionFind.hpp`: Implementation and header files for the Union-Find data structure used in MST algorithms.
 
+5. **analysis**:
+   - This directory contains the analysis and benchmarking code for the project.
+
 ### Example Folder Structure
 
 ```sh
 project-root/
+├── analysis/
+│   ├── coverage/
+│   │   ├── ActiveObject.cpp.gcov
+│   │   ├── ServerPipelineActiveObject.cpp.gcov
+│   │   ├── ...
+│   ├── valgrind/
+│   │   ├── callgrindLF.txt
+│   │   ├── ...
 ├── leaderfollower/
 │   ├── ServerLeaderFollower.cpp
 │   ├── ServerLeaderFollower.hpp

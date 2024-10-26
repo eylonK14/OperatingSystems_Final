@@ -1,0 +1,202 @@
+        -:    0:Source:pipeline/ExamplePipelineStage.cpp
+        -:    1:#include "ExamplePipelineStage.hpp"
+        -:    2:#include <sstream>
+        -:    3:
+        2:    4:ExamplePipelineStage::ExamplePipelineStage() : activeObject() {}
+        -:    5:
+        3:    6:std::string PLprintMenu()
+        -:    7:{
+        3:    8:    std::stringstream ss;
+        3:    9:    ss << "Menu:\n";
+        3:   10:    ss << " 1. Create New Graph           - `newgraph v e`\n";
+        3:   11:    ss << " 2. Add Edge                   - `addedge i j w`\n";
+        3:   12:    ss << " 3. Remove Edge                - `removeedge i j`\n";
+        3:   13:    ss << " 4. Compute MST                - `boruvka`/`kruskal`/`prim`\n";
+        3:   14:    ss << " 5. Get Longest Path           - `longestpath`\n";
+        3:   15:    ss << " 6. Get Shortest Path          - `shortestpath\n";
+        3:   16:    ss << " 7. Get Average Path           - `avgpath`\n";
+        3:   17:    ss << " 8. Get Total Path             - `totalweight`\n";
+        3:   18:    ss << " 9. Print                      - `print`\n";
+        3:   19:    ss << "10. Exit                       - `exit`\n";
+        3:   20:    ss << "11. Help (show this help text) - `help`\n";
+        6:   21:    return ss.str();
+        3:   22:}
+        -:   23:
+        7:   24:void ExamplePipelineStage::PLaddedge(std::string uStr, std::string vStr, std::string wStr)
+        -:   25:{
+        7:   26:    int u = 0, v = 0, w = 0;
+        -:   27:    try
+        -:   28:    {
+        7:   29:        u = std::stoi(uStr) - 1;
+        7:   30:        v = std::stoi(vStr) - 1;
+        7:   31:        w = std::stoi(wStr);
+        7:   32:        this->graph->addEdge(u, v, w);
+        -:   33:    }
+    =====:   34:    catch (const std::invalid_argument &)
+        -:   35:    {
+    =====:   36:        std::cerr << "Invalid arguments for LFaddedge!\n";
+    =====:   37:    }
+        7:   38:}
+        -:   39:
+       31:   40:std::string ExamplePipelineStage::PLparse(std::string input)
+        -:   41:{
+       31:   42:    std::string result;
+       31:   43:    int n = 0, m = 0, u = 0, v = 0;
+        -:   44:
+        -:   45:    // Remove trailing newline character if present
+      31*:   46:    if (!input.empty() && input.back() == '\n')
+    #####:   47:        input.pop_back();
+        -:   48:
+        -:   49:    // Use a string stream to tokenize the input
+       31:   50:    std::istringstream iss(input);
+       31:   51:    std::vector<std::string> tokens;
+       31:   52:    std::string token;
+        -:   53:
+       85:   54:    while (iss >> token)
+        -:   55:    {
+       54:   56:        tokens.push_back(token);
+        -:   57:    }
+        -:   58:
+       31:   59:    if (tokens.empty())
+        -:   60:    {
+        -:   61:        // Empty input, do nothing
+        2:   62:        return "Invalid Command!\n";
+        -:   63:    }
+        -:   64:
+       30:   65:    const std::string &command = tokens[0];
+        -:   66:
+       30:   67:    if (tokens.size() > 1)
+        -:   68:    {
+       12:   69:        if (command == "newgraph" || this->newGraphFlag)
+        -:   70:        {
+        8:   71:            if (this->newGraphFlag)
+        -:   72:            {
+        6:   73:                PLaddedge(tokens[0], tokens[1], tokens[2]);
+        6:   74:                this->counter--;
+        6:   75:                if (this->counter == 0)
+        2:   76:                    this->newGraphFlag = false;
+        -:   77:            }
+        -:   78:            else
+        -:   79:            {
+        -:   80:                try
+        -:   81:                {
+        2:   82:                    n = std::stoi(tokens[1]);
+        2:   83:                    m = std::stoi(tokens[2]);
+        2:   84:                    this->counter = m;
+        2:   85:                    this->graph = new Graph(n);
+        -:   86:
+        -:   87:
+        2:   88:                    newGraphFlag = true;
+        -:   89:                }
+    =====:   90:                catch (const std::invalid_argument &)
+        -:   91:                {
+    =====:   92:                    std::cerr << "Invalid arguments for newgraph!\n";
+    =====:   93:                }
+        -:   94:            }
+        -:   95:        }
+        4:   96:        else if (command == "addedge")
+        -:   97:        {
+        1:   98:            PLaddedge(tokens[1], tokens[2], tokens[3]);
+        -:   99:
+        1:  100:            result = "Edge added successfully.\n";
+        -:  101:        }
+        3:  102:        else if (command == "removeedge")
+        -:  103:        {
+        -:  104:            try
+        -:  105:            {
+        2:  106:                u = std::stoi(tokens[1]) - 1;
+        2:  107:                v = std::stoi(tokens[2]) - 1;
+        2:  108:                this->graph->removeEdge(u, v);
+        -:  109:            }
+    =====:  110:            catch (const std::invalid_argument &)
+        -:  111:            {
+    =====:  112:                std::cerr << "Invalid arguments for removeedge!\n";
+    =====:  113:            }
+        -:  114:
+        2:  115:            result = "Edge removed successfully.\n";
+        -:  116:        }
+        -:  117:    }
+       18:  118:    else if (command == "kruskal" || command == "prim" || command == "boruvka")
+        -:  119:    {
+        4:  120:        if (this->graph != nullptr)
+        -:  121:        {
+        4:  122:            this->mst = new MST(*this->graph, command);
+        4:  123:            result = "Created MST using " + command + " algorithm.\n";
+        -:  124:        }
+        -:  125:        else 
+        -:  126:        {
+    #####:  127:            result = "Must create Graph first!";
+        -:  128:        }
+        -:  129:    }
+       14:  130:    else if (command == "longestpath")
+        -:  131:    {
+        1:  132:        if (this->mst == nullptr)
+    #####:  133:            result = "Must create MST first!\n";
+        -:  134:        else
+        1:  135:            result = "Longest path of the MST: " + std::to_string(mst->getLongestDistance()) + ".\n";
+        -:  136:    }
+       13:  137:    else if (command == "shortestpath")
+        -:  138:    {
+        1:  139:        if (this->mst == nullptr)
+    #####:  140:            result = "Must create MST first!\n";
+        -:  141:        else
+        1:  142:            result = "Shortest path of the MST: " + std::to_string(mst->getShortestDistance()) + ".\n";
+        -:  143:    }
+       12:  144:    else if (command == "avgpath")
+        -:  145:    {
+        1:  146:        if (this->mst == nullptr)
+    #####:  147:            result = "Must create MST first!\n";
+        -:  148:        else
+        1:  149:            result = "Average path of the MST: " + std::to_string(mst->getAverageDistance()) + ".\n";
+        -:  150:    }
+       11:  151:    else if (command == "totalweight")
+        -:  152:    {
+        1:  153:        if (this->mst == nullptr)
+    #####:  154:            result = "Must create MST first!\n";
+        -:  155:        else
+        1:  156:            result = "Total Weight of the MST: " + std::to_string(mst->getTotalWeight()) + ".\n";
+        -:  157:    }
+       10:  158:    else if (command == "print")
+        -:  159:    {
+        5:  160:        if (this->graph != nullptr)
+        -:  161:        {
+        5:  162:            result = "Graph:\n";
+        5:  163:            result += this->graph->printGraph();
+        -:  164:        }
+        5:  165:        if (this->mst != nullptr)
+        -:  166:        {
+        4:  167:            result += "MST:\n";
+        4:  168:            result += this->mst->printGraph();
+        -:  169:        }
+        -:  170:    }
+        5:  171:    else if (command == "exit")
+        2:  172:        exit(EXIT_SUCCESS);
+        3:  173:    else if (command == "help")
+        3:  174:        result = PLprintMenu();
+        -:  175:    else
+        -:  176:    {
+    #####:  177:        std::cerr << "Unrecognized command.\n";
+    #####:  178:        result = "Unrecognized command.\n";
+        -:  179:    }
+        -:  180:        
+        -:  181:
+       28:  182:    return result;
+       29:  183:}
+        -:  184:
+       31:  185:void ExamplePipelineStage::process(const std::string &input, std::function<void(const std::string &)> outputCallback)
+        -:  186:{
+        -:  187:    // Wrap outputCallback in a shared_ptr
+       31:  188:    auto outputCallbackPtr = std::make_shared<std::function<void(const std::string&)>>(outputCallback);
+        -:  189:
+       31:  190:    activeObject.enqueue([input, this, outputCallbackPtr](){
+       31:  191:        std::string output = PLparse(input);
+        -:  192:        try
+        -:  193:        {
+       29:  194:            (*outputCallbackPtr)(output);
+        -:  195:        }
+    =====:  196:        catch (const std::exception &e)
+        -:  197:        {
+    =====:  198:            std::cerr << "Exception in ExamplePipelineStage: " << e.what() << std::endl;
+    =====:  199:        }
+       29:  200:    });
+       31:  201:}

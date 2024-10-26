@@ -1,0 +1,51 @@
+        -:    0:Source:structures/UnionFind.cpp
+        -:    1:#include "UnionFind.hpp"
+        -:    2:
+        2:    3:UnionFind::UnionFind(int n)
+        -:    4:{
+       2*:    5:    parent = new int[n];
+       2*:    6:    rank = new int[n];
+        -:    7:
+       12:    8:    for (int i = 0; i < n; i++)
+        -:    9:    {
+       10:   10:        parent[i] = -1;
+       10:   11:        rank[i] = 1;
+        -:   12:    }
+        2:   13:}
+        -:   14:
+        2:   15:UnionFind::~UnionFind()
+        -:   16:{
+        2:   17:    delete[] parent;
+        2:   18:    delete[] rank;
+        2:   19:}
+        -:   20:
+       85:   21:int UnionFind::find(int i)
+        -:   22:{
+       85:   23:    if (parent[i] == -1)
+       70:   24:        return i;
+        -:   25:
+       15:   26:    return parent[i] = find(parent[i]);
+        -:   27:}
+        -:   28:
+        8:   29:void UnionFind::unite(int x, int y)
+        -:   30:{
+        8:   31:    int s1 = find(x);
+        8:   32:    int s2 = find(y);
+        -:   33:
+        8:   34:    if (s1 != s2)
+        -:   35:    {
+        8:   36:        if (rank[s1] < rank[s2])
+        -:   37:        {
+        1:   38:            parent[s1] = s2;
+        -:   39:        }
+        7:   40:        else if (rank[s1] > rank[s2])
+        -:   41:        {
+        3:   42:            parent[s2] = s1;
+        -:   43:        }
+        -:   44:        else
+        -:   45:        {
+        4:   46:            parent[s2] = s1;
+        4:   47:            rank[s1] += 1;
+        -:   48:        }
+        -:   49:    }
+        8:   50:}

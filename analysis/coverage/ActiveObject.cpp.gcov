@@ -1,0 +1,42 @@
+        -:    0:Source:pipeline/ActiveObject.cpp
+        -:    1:#include "ActiveObject.hpp"
+        -:    2:
+        2:    3:ActiveObject::ActiveObject() : worker(&ActiveObject::run, this), running(true) {}
+        -:    4:
+    #####:    5:ActiveObject::~ActiveObject()
+        -:    6:{
+    #####:    7:    running = false;
+    #####:    8:    tasksCondVar.notify_all();
+    #####:    9:    if (worker.joinable())
+    #####:   10:        worker.join();
+    #####:   11:}
+        -:   12:
+       31:   13:void ActiveObject::enqueue(std::function<void()> task)
+        -:   14:{
+        -:   15:    {
+       31:   16:        std::unique_lock<std::mutex> lock(tasksMutex);
+       31:   17:        tasks.push(task);
+       31:   18:    }
+       31:   19:    tasksCondVar.notify_one();
+       31:   20:}
+        -:   21:
+        2:   22:void ActiveObject::run()
+        -:   23:{
+       31:   24:    while (running)
+        -:   25:    {
+       31:   26:        std::function<void()> task;
+        -:   27:        {
+       31:   28:            std::unique_lock<std::mutex> lock(tasksMutex);
+       31:   29:            tasksCondVar.wait(lock, [this]
+       62:   30:                              { return !tasks.empty() || !running; });
+      31*:   31:            if (!running && tasks.empty())
+    #####:   32:                return;
+       31:   33:            task = tasks.front();
+       31:   34:            tasks.pop();
+       31:   35:        }
+       31:   36:        if (task)
+        -:   37:        {
+       31:   38:            task();
+        -:   39:        }
+       29:   40:    }
+        -:   41:}

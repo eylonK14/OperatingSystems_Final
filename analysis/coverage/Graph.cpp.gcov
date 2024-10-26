@@ -1,0 +1,107 @@
+        -:    0:Source:structures/Graph.cpp
+        -:    0:Graph:structures/Graph.gcno
+        -:    0:Data:structures/Graph.gcda
+        -:    0:Runs:2
+        -:    1:#include "Graph.hpp"
+        -:    2:
+        -:    3:// Constructor
+        5:    4:Graph::Graph(int V)
+        -:    5:{
+        5:    6:    if (V <= 0)
+    #####:    7:        throw std::invalid_argument("received negative value");
+        -:    8:
+        5:    9:    this->V = V;
+       5*:   10:    this->matrix = new int *[this->V];
+       27:   11:    for (int i = 0; i < this->V; i++)
+        -:   12:    {
+      22*:   13:        this->matrix[i] = new int[this->V];
+      126:   14:        for (int j = 0; j < this->V; j++)
+      104:   15:            this->matrix[i][j] = 0;
+        -:   16:    }
+        5:   17:}
+        -:   18:
+        2:   19:Graph::Graph(const Graph &other)
+        -:   20:{
+        2:   21:    this->V = other.V;
+       2*:   22:    this->matrix = new int *[this->V];
+       12:   23:    for (int i = 0; i < this->V; i++)
+        -:   24:    {
+      10*:   25:        this->matrix[i] = new int[this->V];
+       60:   26:        for (int j = 0; j < this->V; j++)
+       50:   27:            this->matrix[i][j] = other.getAdjMatrix()[i][j];
+        -:   28:    }
+        2:   29:}
+        -:   30:
+        -:   31:// Destructor
+        2:   32:Graph::~Graph()
+        -:   33:{
+       12:   34:    for (int i = 0; i < this->V; i++)
+       10:   35:        delete[] this->matrix[i];
+        2:   36:    delete[] this->matrix;
+        2:   37:}
+        -:   38:
+      280:   39:int **Graph::getAdjMatrix() const
+        -:   40:{
+      280:   41:    return this->matrix;
+        -:   42:}
+        -:   43:
+      187:   44:int Graph::getV() const
+        -:   45:{
+      187:   46:    return this->V;
+        -:   47:}
+        -:   48:
+        -:   49:// Add an edge to the graph
+       19:   50:void Graph::addEdge(int u, int v, int w)
+        -:   51:{
+       19:   52:    this->matrix[u][v] = w;
+       19:   53:    this->matrix[v][u] = w;
+       19:   54:}
+        -:   55:
+        -:   56:// remove an edge from the graph
+        2:   57:void Graph::removeEdge(int u, int v)
+        -:   58:{
+        2:   59:    this->matrix[u][v] = 0;
+        2:   60:    this->matrix[v][u] = 0;
+        2:   61:}
+        -:   62:
+        -:   63:// Print the graph as adjacency list
+       10:   64:std::string Graph::printGraph()
+        -:   65:{
+       10:   66:    std::string graph = "";
+        -:   67:
+       47:   68:    for (int i = 0; i < this->V; i++)
+        -:   69:    {
+      216:   70:        for (int j = 0; j < this->V; j++)
+      179:   71:            if (this->matrix[i][j] != 0)
+       62:   72:                graph += "(" + std::to_string(i) + ", " + std::to_string(j) + ") = " + std::to_string(this->matrix[i][j]) + "\n";
+        -:   73:    }
+        -:   74:
+       10:   75:    return graph;
+    =====:   76:}
+        -:   77:
+        -:   78:// // Function to get the transpose of the graph
+        -:   79:// Graph *transposeGraph(Graph *graph)
+        -:   80:// {
+        -:   81:// 	Graph *transposed = createGraph(graph->V);
+        -:   82:// 	for (int v = 0; v < graph->V; v++)
+        -:   83:// 	{
+        -:   84:// #ifdef ADJ_MATRIX
+        -:   85:// 		for (int i = 0; i < graph->V; i++)
+        -:   86:// 		{
+        -:   87:// 			if (graph->G[v][i])
+        -:   88:// 				PLaddedge(transposed, i, v);
+        -:   89:// 		}
+        -:   90:// #endif // ADJ_MATRIX
+        -:   91:
+        -:   92:// #ifdef ADJ_LIST
+        -:   93:// 		AdjListNode *adjNode = graph->array[v].head;
+        -:   94:// 		while (adjNode != NULL)
+        -:   95:// 		{
+        -:   96:// 			int neighbor = adjNode->dest;
+        -:   97:// 			PLaddedge(transposed, neighbor, v);
+        -:   98:// 			adjNode = adjNode->next;
+        -:   99:// 		}
+        -:  100:// #endif // ADJ_LIST
+        -:  101:// 	}
+        -:  102:// 	return transposed;
+        -:  103:// }

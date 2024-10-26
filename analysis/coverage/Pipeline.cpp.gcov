@@ -1,0 +1,29 @@
+        -:    0:Source:pipeline/Pipeline.cpp
+        -:    1:#include "Pipeline.hpp"
+        -:    2:
+        2:    3:void Pipeline::addStage(std::shared_ptr<PipelineStage> stage)
+        -:    4:{
+        2:    5:    stages.push_back(stage);
+        2:    6:}
+        -:    7:
+       31:    8:void Pipeline::process(const std::string& input, std::function<void(const std::string&)> outputCallback) {
+       31:    9:    if (stages.empty()) {
+    #####:   10:        outputCallback(input);
+    #####:   11:        return;
+        -:   12:    }
+        -:   13:
+        -:   14:    // Use a shared_ptr to allow the lambda to capture itself by value
+       31:   15:    auto processStage = std::make_shared<std::function<void(size_t, const std::string&)>>();
+       62:   16:    *processStage = [this, processStage, outputCallback](size_t index, const std::string& data) {
+       60:   17:        if (index < stages.size()) {
+       31:   18:            stages[index]->process(data, [this, processStage, index, outputCallback](const std::string& output) {
+       29:   19:                (*processStage)(index + 1, output);
+       29:   20:            });
+        -:   21:        } else {
+       29:   22:            outputCallback(data);
+        -:   23:        }
+       91:   24:    };
+        -:   25:
+        -:   26:    // Start processing
+       31:   27:    (*processStage)(0, input);
+       31:   28:}

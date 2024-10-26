@@ -1,0 +1,135 @@
+        -:    0:Source:structures/MST.cpp
+        -:    1:#include "MST.hpp"
+        -:    2:
+        1:    3:int MST::getTotalWeight() const
+        -:    4:{
+        1:    5:    int MSTweight = 0;
+        6:    6:    for (int i = 0; i < getV(); i++)
+       20:    7:        for (int j = i; j < getV(); j++)
+       15:    8:            if (getAdjMatrix()[i][j])
+        4:    9:                MSTweight += getAdjMatrix()[i][j];
+        -:   10:
+        1:   11:    return MSTweight;
+        -:   12:}
+        -:   13:
+        1:   14:int MST::getLongestDistance() const
+        -:   15:{
+        1:   16:    std::pair<int, int> firstBFS = bfs(0);
+        1:   17:    std::pair<int, int> secondBFS = bfs(firstBFS.first);
+        1:   18:    return secondBFS.second;
+        -:   19:}
+        -:   20:
+        1:   21:int MST::getAverageDistance() const
+        -:   22:{
+        1:   23:    int totalWeight = 0;
+        1:   24:    int edgeCount = 0;
+        -:   25:
+        6:   26:    for (int i = 0; i < getV(); i++)
+        -:   27:    {
+       15:   28:        for (int j = i + 1; j < getV(); j++)
+        -:   29:        {
+       10:   30:            if (getAdjMatrix()[i][j] != 0)
+        -:   31:            {
+        4:   32:                totalWeight += getAdjMatrix()[i][j];
+        4:   33:                edgeCount++;
+        -:   34:            }
+        -:   35:        }
+        -:   36:    }
+        -:   37:
+        1:   38:    if (edgeCount == 0)
+    #####:   39:        return 0.0; // Avoid division by zero
+        -:   40:
+        1:   41:    return static_cast<int>(totalWeight) / edgeCount;
+        -:   42:}
+        -:   43:
+        1:   44:int MST::getShortestDistance() const
+        -:   45:{
+        1:   46:    int dis = INT_MAX;
+        6:   47:    for (int i = 0; i < getV(); i++)
+        -:   48:    {
+       15:   49:        for (int j = i + 1; j < getV(); j++)
+        -:   50:        {
+       10:   51:            if (getAdjMatrix()[i][j] != 0)
+        -:   52:            {
+        4:   53:                int distance = shortestDistance(i, j);
+        4:   54:                if (distance != -1 && distance < dis)
+        -:   55:                {
+        1:   56:                    dis = distance;
+        -:   57:                }
+        -:   58:            }
+        -:   59:        }
+        -:   60:    }
+        -:   61:
+        1:   62:    return dis;
+        -:   63:}
+        -:   64:
+        2:   65:std::pair<int, int> MST::bfs(int start) const
+        -:   66:{
+        2:   67:    std::vector<int> dist(getV(), INT_MAX);
+        2:   68:    std::queue<int> q;
+        2:   69:    q.push(start);
+        2:   70:    dist[start] = 0;
+        -:   71:
+        2:   72:    int furthestNode = start;
+       12:   73:    while (!q.empty())
+        -:   74:    {
+       10:   75:        int node = q.front();
+       10:   76:        q.pop();
+        -:   77:
+       60:   78:        for (int i = 0; i < getV(); i++)
+        -:   79:        {
+       50:   80:            if (getAdjMatrix()[node][i] != 0 && dist[i] == INT_MAX)
+        -:   81:            {
+        8:   82:                dist[i] = dist[node] + getAdjMatrix()[node][i];
+        8:   83:                q.push(i);
+        -:   84:
+        8:   85:                if (dist[i] > dist[furthestNode])
+        -:   86:                {
+        4:   87:                    furthestNode = i;
+        -:   88:                }
+        -:   89:            }
+        -:   90:        }
+        -:   91:    }
+        -:   92:
+        4:   93:    return {furthestNode, dist[furthestNode]};
+        2:   94:}
+        -:   95:
+        4:   96:int MST::shortestDistance(int u, int v) const
+        -:   97:{
+        4:   98:    std::vector<bool> visited(getV(), false);
+        4:   99:    int totalWeight = 0;
+        -:  100:
+        4:  101:    if (dfs(u, v, visited, totalWeight))
+        -:  102:    {
+        4:  103:        return totalWeight;
+        -:  104:    }
+        -:  105:    else
+        -:  106:    {
+    #####:  107:        return -1;
+        -:  108:    }
+        4:  109:}
+        -:  110:
+       14:  111:bool MST::dfs(int u, int v, std::vector<bool> &visited, int &totalWeight) const
+        -:  112:{
+       14:  113:    if (u == v)
+        4:  114:        return true;
+        -:  115:
+       10:  116:    visited[u] = true;
+        -:  117:
+       50:  118:    for (int i = 0; i < getV(); i++)
+        -:  119:    {
+       44:  120:        if (getAdjMatrix()[u][i] != 0 && !visited[i])
+        -:  121:        {
+       10:  122:            int weight = getAdjMatrix()[u][i];
+        -:  123:
+       10:  124:            totalWeight += weight;
+        -:  125:
+       10:  126:            if (dfs(i, v, visited, totalWeight))
+        4:  127:                return true;
+        -:  128:
+        6:  129:            totalWeight -= weight;
+        -:  130:        }
+        -:  131:    }
+        -:  132:
+        6:  133:    return false;
+        -:  134:}
