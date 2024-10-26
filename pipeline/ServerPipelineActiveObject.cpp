@@ -64,28 +64,32 @@ PLServer::PLServer(int port) : port(port)
 
 PLServer::~PLServer()
 {
-    close(PLServer_fd);
     for (auto &client : clients)
     {
         close(client.first);
     }
+    clients.clear();
+    close(PLServer_fd);
 }
 
-void PLServer::handleClientData(int client_fd, std::vector<pollfd> &poll_fds) {
+void PLServer::handleClientData(int client_fd, std::vector<pollfd> &poll_fds)
+{
     char buffer[1024];
     ssize_t bytes_read = read(client_fd, buffer, sizeof(buffer));
 
-    if (bytes_read <= 0) {
-        if (bytes_read == 0 || (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN)) {
+    if (bytes_read <= 0)
+    {
+        if (bytes_read == 0 || (bytes_read < 0 && errno != EWOULDBLOCK && errno != EAGAIN))
+        {
             // Client disconnected or error
             std::cout << "Client disconnected: FD " << client_fd << std::endl;
             close(client_fd);
 
             // Remove from poll_fds
-            auto it = std::find_if(poll_fds.begin(), poll_fds.end(), [client_fd](const struct pollfd& pfd) {
-                return pfd.fd == client_fd;
-            });
-            if (it != poll_fds.end()) {
+            auto it = std::find_if(poll_fds.begin(), poll_fds.end(), [client_fd](const struct pollfd &pfd)
+                                   { return pfd.fd == client_fd; });
+            if (it != poll_fds.end())
+            {
                 poll_fds.erase(it);
             }
 
@@ -95,29 +99,33 @@ void PLServer::handleClientData(int client_fd, std::vector<pollfd> &poll_fds) {
                 clients.erase(client_fd);
             }
         }
-    } else {
+    }
+    else
+    {
         std::shared_ptr<ClientConnection> client;
         {
             std::lock_guard<std::mutex> lock(client_mutex);
             auto it = clients.find(client_fd);
-            if (it != clients.end()) {
+            if (it != clients.end())
+            {
                 client = it->second;
                 client->buffer.append(buffer, bytes_read);
-            } else {
-                // Client not found, maybe disconnected
-                return;
             }
+            else // Client not found, maybe disconnected
+                return;
         }
 
         // Check for complete messages (newline-terminated)
         size_t pos;
-        while ((pos = client->buffer.find('\n')) != std::string::npos) {
+        while ((pos = client->buffer.find('\n')) != std::string::npos)
+        {
             std::string message = client->buffer.substr(0, pos);
             client->buffer.erase(0, pos + 1);
 
             // Process message through the pipeline
             std::weak_ptr<ClientConnection> client_weak = client;
-            pipeline.process(message, [this, client_weak](const std::string& output) {
+            pipeline.process(message, [this, client_weak](const std::string &output)
+                             {
                 // Output callback executed in another thread
                 if (auto client = client_weak.lock()) {
                     int fd = client->fd;
@@ -129,8 +137,7 @@ void PLServer::handleClientData(int client_fd, std::vector<pollfd> &poll_fds) {
                 } else {
                     // Client has disconnected
                     std::cout << "Client disconnected before output could be sent" << std::endl;
-                }
-            });
+                } });
         }
     }
 }
@@ -151,18 +158,21 @@ void PLServer::run()
         int poll_count = poll(poll_fds.data(), poll_fds.size(), -1);
         if (poll_count < 0)
         {
+            if (errno == EINTR) // Interrupted by signal, retry poll
+                continue;
             perror("poll failed");
             break;
         }
-        for (size_t i = 0; i < poll_fds.size(); ++i) 
+        for (size_t i = 0; i < poll_fds.size(); ++i)
         {
             if (poll_fds[i].revents & POLLIN)
             {
-                if (poll_fds[i].fd == PLServer_fd) 
+                if (poll_fds[i].fd == PLServer_fd)
                 {
                     // Accept new connection
                     int new_socket = accept(PLServer_fd, NULL, NULL);
-                    if (new_socket < 0) {
+                    if (new_socket < 0)
+                    {
                         // ... Error handling ...
                         if (errno != EWOULDBLOCK && errno != EAGAIN)
                             perror("accept failed");
@@ -192,7 +202,7 @@ void PLServer::run()
 
                     std::cout << "New client connected: FD " << new_socket << std::endl;
                 }
-                else 
+                else
                 {
                     // Handle data from client
                     int client_fd = poll_fds[i].fd;

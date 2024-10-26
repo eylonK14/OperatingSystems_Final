@@ -1,14 +1,18 @@
-CXXFLAGS = -pg -g -Wall -Werror -Wextra -std=c++17 -pthread -fprofile-arcs -ftest-coverage -lgcov
+CXXFLAGS = -g -Wall -Werror -Wextra -std=c++17 -pthread -fprofile-arcs -ftest-coverage -lgcov
 CXX = g++
 TARGET = Main
 
 SRCS = $(wildcard leaderfollower/*.cpp pipeline/*.cpp structures/*.cpp Main.cpp)
 OBJS = $(SRCS:.cpp=.o)
+VALGRIND_FLAGS=-v --leak-check=full --show-leak-kinds=all --track-origins=yes  -s  --error-exitcode=99
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) $(OBJS) -o $@
+
+tidy:
+	clang-tidy $(SRCS) -checks=bugprone-*,clang-analyzer-*,cppcoreguidelines-*,performance-*,portability-*,readability-*,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-cppcoreguidelines-owning-memory --warnings-as-errors=-* --
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@

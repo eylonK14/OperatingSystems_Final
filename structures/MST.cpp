@@ -1,5 +1,15 @@
 #include "MST.hpp"
 
+MST::MST() : Graph()
+{
+    //ctor
+}
+
+MST::~MST()
+{
+    delete this;
+}
+
 int MST::getTotalWeight() const
 {
     int MSTweight = 0;

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <iostream>
+#include <sstream>
+
 
 /**
  * @class Graph
@@ -76,5 +78,5 @@ public:
 
 private:
     int V;
-    int **matrix;
+    int** matrix;
 };
