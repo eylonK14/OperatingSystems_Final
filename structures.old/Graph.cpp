@@ -1,5 +1,11 @@
 #include "Graph.hpp"
 
+Graph::Graph()
+{
+    this->V = 0;
+    this->matrix = nullptr;
+}
+
 // Constructor
 Graph::Graph(int V)
 {
@@ -7,7 +13,8 @@ Graph::Graph(int V)
         throw std::invalid_argument("received negative value");
 
     this->V = V;
-    this->matrix = new int *[this->V];
+    // vector
+    this->matrix = new int*[this->V];
     for (int i = 0; i < this->V; i++)
     {
         this->matrix[i] = new int[this->V];
@@ -28,6 +35,23 @@ Graph::Graph(const Graph &other)
     }
 }
 
+// Grapg::Graph(Graph&& other) noexcept : V(other.V), matrix(std::move(other.matrix)) {
+//     other.V = 0;
+// }
+
+// Grapg::Graph& operator=(Graph&& other) noexcept {
+//     if (this != &other) {
+//         for (int i = 0; i < this->V; i++)
+//             delete[] this->matrix[i];
+//         delete[] this->matrix;
+
+//         V = other.V;
+//         matrix = std::move(other.matrix);
+//         other.V = 0;
+//     }
+//     return *this;
+// }
+
 // Destructor
 Graph::~Graph()
 {
@@ -47,8 +71,10 @@ int Graph::getV() const
 }
 
 // Add an edge to the graph
-void Graph::addEdge(int u, int v, int w)
+void Graph::addEdge(int u, int v, int w) 
 {
+    if (u < 0 || u >= V || v < 0 || v >= V)
+        throw std::out_of_range("Vertex index out of range");
     this->matrix[u][v] = w;
     this->matrix[v][u] = w;
 }
@@ -63,41 +89,13 @@ void Graph::removeEdge(int u, int v)
 // Print the graph as adjacency list
 std::string Graph::printGraph()
 {
-    std::string graph = "";
-
-    for (int i = 0; i < this->V; i++)
-    {
-        for (int j = 0; j < this->V; j++)
-            if (this->matrix[i][j] != 0)
-                graph += "(" + std::to_string(i) + ", " + std::to_string(j) + ") = " + std::to_string(this->matrix[i][j]) + "\n";
+    std::ostringstream oss;
+    for (int i = 0; i < this->V; i++) {
+        for (int j = 0; j < this->V; j++) {
+            if (this->matrix[i][j] != 0) {
+                oss << "(" << i << ", " << j << ") = " << this->matrix[i][j] << "\n";
+            }
+        }
     }
-
-    return graph;
+    return oss.str();
 }
-
-// // Function to get the transpose of the graph
-// Graph *transposeGraph(Graph *graph)
-// {
-// 	Graph *transposed = createGraph(graph->V);
-// 	for (int v = 0; v < graph->V; v++)
-// 	{
-// #ifdef ADJ_MATRIX
-// 		for (int i = 0; i < graph->V; i++)
-// 		{
-// 			if (graph->G[v][i])
-// 				PLaddedge(transposed, i, v);
-// 		}
-// #endif // ADJ_MATRIX
-
-// #ifdef ADJ_LIST
-// 		AdjListNode *adjNode = graph->array[v].head;
-// 		while (adjNode != NULL)
-// 		{
-// 			int neighbor = adjNode->dest;
-// 			PLaddedge(transposed, neighbor, v);
-// 			adjNode = adjNode->next;
-// 		}
-// #endif // ADJ_LIST
-// 	}
-// 	return transposed;
-// }

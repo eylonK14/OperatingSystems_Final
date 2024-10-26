@@ -1,7 +1,12 @@
 #include "ExamplePipelineStage.hpp"
 #include <sstream>
 
-ExamplePipelineStage::ExamplePipelineStage() : activeObject() {}
+ExamplePipelineStage::ExamplePipelineStage() : newGraphFlag(false), activeObject(),  graph(std::make_unique<Graph>()),
+                                               mst(std::make_unique<MST>()) {}
+
+ExamplePipelineStage::~ExamplePipelineStage()
+{
+}
 
 std::string PLprintMenu()
 {
@@ -39,8 +44,8 @@ void ExamplePipelineStage::PLaddedge(std::string uStr, std::string vStr, std::st
 
 std::string ExamplePipelineStage::PLparse(std::string input)
 {
-    std::string result;
-    int n = 0, m = 0, u = 0, v = 0;
+    std::string result = "";
+    int u = 0, v = 0, n = 0, m = 0;
 
     // Remove trailing newline character if present
     if (!input.empty() && input.back() == '\n')
@@ -82,8 +87,7 @@ std::string ExamplePipelineStage::PLparse(std::string input)
                     n = std::stoi(tokens[1]);
                     m = std::stoi(tokens[2]);
                     this->counter = m;
-                    this->graph = new Graph(n);
-
+                    this->graph = std::make_unique<Graph>(n);
 
                     newGraphFlag = true;
                 }
@@ -117,14 +121,12 @@ std::string ExamplePipelineStage::PLparse(std::string input)
     }
     else if (command == "kruskal" || command == "prim" || command == "boruvka")
     {
-        if (this->graph != nullptr)
+        if (this->graph == nullptr)
+            result = "Must create graph first!\n";
+        else
         {
-            this->mst = new MST(*this->graph, command);
+            this->mst = std::make_unique<MST>(*this->graph, command);
             result = "Created MST using " + command + " algorithm.\n";
-        }
-        else 
-        {
-            result = "Must create Graph first!";
         }
     }
     else if (command == "longestpath")
@@ -177,25 +179,32 @@ std::string ExamplePipelineStage::PLparse(std::string input)
         std::cerr << "Unrecognized command.\n";
         result = "Unrecognized command.\n";
     }
-        
 
     return result;
 }
 
-void ExamplePipelineStage::process(const std::string &input, std::function<void(const std::string &)> outputCallback)
-{
-    // Wrap outputCallback in a shared_ptr
-    auto outputCallbackPtr = std::make_shared<std::function<void(const std::string&)>>(outputCallback);
+// void ExamplePipelineStage::process(const std::string &input, std::function<void(const std::string &)> outputCallback)
+// {
+//     // Wrap outputCallback in a shared_ptr
+//     auto outputCallbackPtr = std::make_shared<std::function<void(const std::string &)>>(outputCallback);
 
-    activeObject.enqueue([input, this, outputCallbackPtr](){
+//     activeObject.enqueue([input, this, outputCallbackPtr]()
+//                          {
+//         std::string output = PLparse(input);
+//         try
+//         {
+//             (*outputCallbackPtr)(output);
+//         }
+//         catch (const std::exception &e)
+//         {
+//             std::cerr << "Exception in ExamplePipelineStage: " << e.what() << std::endl;
+//         } });
+// }
+
+void ExamplePipelineStage::process(const std::string& input, std::function<void(const std::string&)> outputCallback) {
+    activeObject.enqueue([input, outputCallback, this]() 
+    {
         std::string output = PLparse(input);
-        try
-        {
-            (*outputCallbackPtr)(output);
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << "Exception in ExamplePipelineStage: " << e.what() << std::endl;
-        }
+        outputCallback(output);
     });
 }

@@ -237,14 +237,11 @@ std::string LFprintMenu()
 
 void LFServer::LFaddedge(std::string uStr, std::string vStr, std::string wStr)
 {
-    int u = 0, v = 0, w = 0;
-    std::cout << "Adding edge " << uStr << " " << vStr << " " << wStr << "\n";
     try
     {
-        u = std::stoi(uStr) - 1;
-        v = std::stoi(vStr) - 1;
-        w = std::stoi(wStr);
-        std::cout << "Adding edge " << u << " " << v << " " << w << "\n";
+        int u = std::stoi(uStr) - 1;
+        int v = std::stoi(vStr) - 1;
+        int w = std::stoi(wStr);
         this->graph->addEdge(u, v, w);
     }
     catch (const std::invalid_argument &)
@@ -256,7 +253,6 @@ void LFServer::LFaddedge(std::string uStr, std::string vStr, std::string wStr)
 std::string LFServer::LFparse(std::string input)
 {
     std::string result;
-    int n = 0, m = 0, u = 0, v = 0;
 
     // Remove trailing newline character if present
     if (!input.empty() && input.back() == '\n')
@@ -295,8 +291,8 @@ std::string LFServer::LFparse(std::string input)
             {
                 try
                 {
-                    n = std::stoi(tokens[1]);
-                    m = std::stoi(tokens[2]);
+                    int n = std::stoi(tokens[1]);
+                    int m = std::stoi(tokens[2]);
                     this->counter = m;
                     this->graph = new Graph(n);
 
@@ -318,8 +314,8 @@ std::string LFServer::LFparse(std::string input)
         {
             try
             {
-                u = std::stoi(tokens[1]) - 1;
-                v = std::stoi(tokens[2]) - 1;
+                int u = std::stoi(tokens[1]) - 1;
+                int v = std::stoi(tokens[2]) - 1;
                 this->graph->removeEdge(u, v);
             }
             catch (const std::invalid_argument &)
@@ -332,15 +328,8 @@ std::string LFServer::LFparse(std::string input)
     }
     else if (command == "kruskal" || command == "prim" || command == "boruvka")
     {
-        if (this->graph != nullptr)
-        {
-            this->mst = new MST(*this->graph, command);
-            result = "Created MST using " + command + " algorithm.\n";
-        }
-        else 
-        {
-            result = "Must create Graph first!";
-        }
+        this->mst = new MST(*this->graph, command);
+        result = "Created MST using " + command + " algorithm.\n";
     }
     else if (command == "longestpath")
     {
@@ -371,17 +360,11 @@ std::string LFServer::LFparse(std::string input)
             result = "Total Weight of the MST: " + std::to_string(mst->getTotalWeight()) + ".\n";
     }
     else if (command == "print")
-    {   
-        if (this->graph != nullptr)
-        {
-            result = "Graph:\n";
-            result += this->graph->printGraph();
-        }
-        if (this->mst != nullptr)
-        {
-            result += "MST:\n";
-            result += this->mst->printGraph();
-        }
+    {
+        result = "Graph:\n";
+        result += this->graph->printGraph();
+        result += "MST:\n";
+        result += this->mst->printGraph();
     }
     else if (command == "exit")
     {

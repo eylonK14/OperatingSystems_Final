@@ -34,8 +34,6 @@ void ActiveObject::run()
             tasks.pop();
         }
         if (task)
-        {
             task();
-        }
     }
 }
