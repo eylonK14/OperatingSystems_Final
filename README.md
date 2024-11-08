@@ -42,8 +42,6 @@ Exit                       - `exit`;
 Help (show this help text) - `help`;
 ```
 
-Certainly! Here is an explanation of the project's folder structure based on the provided context and typical organization for such projects:
-
 ## Project Folder Structure
 
 The project is organized into several directories, each serving a specific purpose to maintain a clean and manageable codebase. Below is an overview of the typical structure and the role of each directory:
