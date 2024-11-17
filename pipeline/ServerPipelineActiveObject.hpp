@@ -23,7 +23,7 @@ private:
 
     int PLServer_fd;
     int port;
-    Pipeline pipeline;
+    std::unique_ptr<Pipeline> pipeline;
     std::map<int, std::shared_ptr<ClientConnection>> clients;
     std::mutex client_mutex;
     void handleClientData(int, std::vector<struct pollfd> &);

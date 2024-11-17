@@ -22,13 +22,18 @@ class ActiveObject
 public:
     ActiveObject();
     ~ActiveObject();
-    void enqueue(std::function<void()> task);
+    void enqueue(int);
+    std::function<void(int)> currentTask;
+    bool previousTaskFinished;
 
 private:
     void run();
     std::thread worker;
-    std::queue<std::function<void()>> tasks;
+    std::queue<std::function<void(int)>> tasks;
     std::mutex tasksMutex;
     std::condition_variable tasksCondVar;
     std::atomic<bool> running;
+    int fd;
+    
+    
 };

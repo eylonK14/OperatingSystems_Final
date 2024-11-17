@@ -10,11 +10,12 @@ ActiveObject::~ActiveObject()
         worker.join();
 }
 
-void ActiveObject::enqueue(std::function<void()> task)
+void ActiveObject::enqueue(int fd)
 {
+    this->fd = fd;
     {
         std::unique_lock<std::mutex> lock(tasksMutex);
-        tasks.push(task);
+        tasks.push(currentTask);
     }
     tasksCondVar.notify_one();
 }
@@ -23,11 +24,11 @@ void ActiveObject::run()
 {
     while (running)
     {
-        std::function<void()> task;
+        std::function<void(int)> task;
         {
             std::unique_lock<std::mutex> lock(tasksMutex);
             tasksCondVar.wait(lock, [this]
-                              { return !tasks.empty() || !running; });
+                              { return (!tasks.empty() && previousTaskFinished) || !running; });
             if (!running && tasks.empty())
                 return;
             task = tasks.front();
@@ -35,7 +36,7 @@ void ActiveObject::run()
         }
         if (task)
         {
-            task();
+            task(fd);
         }
     }
 }

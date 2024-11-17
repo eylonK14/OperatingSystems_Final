@@ -1,6 +1,6 @@
 #include "ServerPipelineActiveObject.hpp"
 #include "ActiveObject.hpp"
-#include "ExamplePipelineStage.hpp" // Custom pipeline stages
+// #include "ExamplePipelineStage.hpp" // Custom pipeline stages
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -58,7 +58,7 @@ PLServer::PLServer(int port) : port(port)
     fcntl(PLServer_fd, F_SETFL, flags | O_NONBLOCK);
 
     // Initialize pipeline and add stages
-    pipeline.addStage(std::make_shared<ExamplePipelineStage>());
+    pipeline = std::make_unique<Pipeline>();
     // Add more stages as needed
 }
 
@@ -115,22 +115,15 @@ void PLServer::handleClientData(int client_fd, std::vector<pollfd> &poll_fds) {
             std::string message = client->buffer.substr(0, pos);
             client->buffer.erase(0, pos + 1);
 
-            // Process message through the pipeline
-            std::weak_ptr<ClientConnection> client_weak = client;
-            pipeline.process(message, [this, client_weak](const std::string& output) {
-                // Output callback executed in another thread
-                if (auto client = client_weak.lock()) {
-                    int fd = client->fd;
-                    std::string response = output + "\n";
-                    ssize_t bytes_written = write(fd, response.c_str(), response.length());
-                    if (bytes_written < 0) {
-                        perror("write failed");
-                    }
-                } else {
-                    // Client has disconnected
-                    std::cout << "Client disconnected before output could be sent" << std::endl;
-                }
-            });
+            int fd = client->fd;
+
+            pipeline->handleRequest(fd, message);
+            
+            // std::string response = output + "\n";
+            // ssize_t bytes_written = write(fd, response.c_str(), response.length());
+            // if (bytes_written < 0) {
+            //     perror("write failed");
+            // }
         }
     }
 }
